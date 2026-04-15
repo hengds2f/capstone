@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Data Flow & Encoding - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔄 Data Flow & Encoding</h1>
+    <p class="breadcrumb">Home / Data Flow — Serialization, encoding, and data movement</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Serialization Formats</h3></div>
+    <div class="concept-body">
+        <p>Data must be serialized (converted to bytes) for storage and transmission. The format choice impacts performance, readability, and interoperability.</p>
+        <table class="table">
+            <tr><th>Format</th><th>Type</th><th>Pros</th><th>Cons</th><th>SG Use Case</th></tr>
+            <tr><td>CSV</td><td>Text</td><td>Human-readable, universal</td><td>No schema, slow for big data</td><td>data.gov.sg downloads</td></tr>
+            <tr><td>JSON</td><td>Text</td><td>Flexible, API-friendly</td><td>Verbose, no native types</td><td>data.gov.sg API responses</td></tr>
+            <tr><td>Parquet</td><td>Binary</td><td>Columnar, compressed, fast</td><td>Not human-readable</td><td>Large-scale analytics</td></tr>
+            <tr><td>Avro</td><td>Binary</td><td>Schema evolution, row-based</td><td>Complex setup</td><td>Kafka event streams</td></tr>
+            <tr><td>Protocol Buffers</td><td>Binary</td><td>Compact, fast, typed</td><td>Requires .proto files</td><td>gRPC microservices</td></tr>
+        </table>
+
+        <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
+import json
+
+# CSV: Human-readable flat files
+df = pd.read_csv('data/hdb_resale.csv')
+df.to_csv('output/hdb_clean.csv', index=False)
+
+# JSON: API-compatible structured data
+data = df.head(5).to_dict(orient='records')
+with open('output/hdb_sample.json', 'w') as f:
+    json.dump(data, f, indent=2)
+
+# Parquet: Columnar storage for analytics (10x smaller, 100x faster)
+df.to_parquet('output/hdb_data.parquet', engine='pyarrow')
+df_parquet = pd.read_parquet('output/hdb_data.parquet')
+
+# Size comparison (typical for 1M rows):
+# CSV: ~150 MB | JSON: ~250 MB | Parquet: ~15 MB</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Character Encoding</h3></div>
+    <div class="concept-body">
+        <p>Singapore's multilingual environment (English, Chinese, Malay, Tamil) makes encoding critical.</p>
+        <div class="code-block"><span class="lang-label">Python</span><pre># Always specify UTF-8 for Singapore data
+df = pd.read_csv('data/hdb_resale.csv', encoding='utf-8')
+
+# Common encoding issues:
+# - Street names with Chinese characters
+# - Malay place names with diacritics
+# - Tamil school names
+
+# Safe reading pattern
+for encoding in ['utf-8', 'utf-8-sig', 'cp1252', 'latin-1']:
+    try:
+        df = pd.read_csv(filepath, encoding=encoding)
+        break
+    except UnicodeDecodeError:
+        continue</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Flow Patterns</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Request-Response (Synchronous):
+  Client ──request──> Server ──response──> Client
+  Example: GET /api/housing → JSON response
+
+Publish-Subscribe (Async):
+  Producer ──event──> Message Queue ──event──> Consumer(s)
+  Example: MRT crowding event → Kafka topic → Dashboard + Alert service
+
+Batch File Transfer:
+  Source ──file──> Staging ──process──> Warehouse
+  Example: Monthly HDB CSV → Python ETL → SQLite star schema</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Convert the HDB CSV data to JSON format and compare file sizes.</p>
+    <p>2. Create a data flow diagram for: API → Validate → Transform → Store → Query → Chart.</p>
+    <p>3. What encoding would you use for a dataset containing both English and Chinese street names?</p>
+</div>
+{% endblock %}

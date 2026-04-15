@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Natural Language Processing - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>💬 Natural Language Processing</h1>
+    <p class="breadcrumb">Home / NLP — Text classification and sentiment analysis</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 NLP Pipeline</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Concept</span><pre>NLP Pipeline for Singapore Text Data:
+
+Raw Text → Preprocessing → Feature Extraction → Model → Prediction
+   │            │                │                │         │
+"The MRT    lowercase,      TF-IDF           NaiveBayes  "transport"
+was very    remove stop     vectors           classifier   (topic)
+crowded     words, stem                                    "negative"
+today"                                                     (sentiment)</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🚀 Text Classification Demo</h3></div>
+    <div class="concept-body">
+        <p>Classify Singapore-related text into topics: housing, transport, education, sustainability, urban_planning.</p>
+        <div style="margin-bottom: 15px;">
+            <label>Enter text about Singapore:</label>
+            <textarea id="nlp-text" class="form-control" rows="3" placeholder="e.g., The new BTO flats in Tengah will feature smart home technology and sustainable design">The MRT service was disrupted again during peak hours, causing delays for thousands of commuters.</textarea>
+        </div>
+        <button class="btn" onclick="classifyText()">🏷️ Classify Text</button>
+        <div id="nlp-output" class="output-box" style="margin-top: 15px; min-height: 80px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 TF-IDF Vectorization</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Singapore-domain text corpus
+documents = [
+    "HDB resale prices in Bishan reached new highs",
+    "MRT Circle Line extension to improve connectivity",
+    "Primary school enrollment increases in new estates",
+    "Solar panels installed on HDB rooftops",
+    "New hawker centres planned for Punggol and Tengah"
+]
+
+# TF-IDF: Term Frequency × Inverse Document Frequency
+vectorizer = TfidfVectorizer(
+    max_features=1000,      # Top 1000 words
+    stop_words='english',   # Remove common words
+    ngram_range=(1, 2)      # Include bigrams: "MRT line", "resale price"
+)
+
+X = vectorizer.fit_transform(documents)
+print(f"Vocabulary size: {len(vectorizer.vocabulary_)}")
+print(f"Feature matrix shape: {X.shape}")
+
+# Top features per document
+feature_names = vectorizer.get_feature_names_out()
+for i, doc in enumerate(documents):
+    scores = X[i].toarray().flatten()
+    top_indices = scores.argsort()[-3:][::-1]
+    top_words = [(feature_names[j], scores[j]) for j in top_indices]
+    print(f"Doc {i}: {top_words}")</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Sentiment Analysis</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+
+# Build a sentiment classifier
+sentiment_pipeline = Pipeline([
+    ('tfidf', TfidfVectorizer(max_features=5000, stop_words='english')),
+    ('classifier', LogisticRegression(max_iter=1000))
+])
+
+# Training data (Singapore context)
+train_texts = [
+    "The new MRT line is wonderful and efficient",        # positive
+    "HDB prices are unreasonably high for young couples", # negative
+    "Clean and well-maintained hawker centres",            # positive
+    "Terrible bus service with constant delays",           # negative
+    "Beautiful parks and green spaces in Bishan",          # positive
+    "Overcrowded trains during rush hour",                 # negative
+]
+train_labels = [1, 0, 1, 0, 1, 0]  # 1=positive, 0=negative
+
+# Train
+sentiment_pipeline.fit(train_texts, train_labels)
+
+# Predict
+new_texts = ["The renovation of Orchard Road is impressive"]
+predictions = sentiment_pipeline.predict(new_texts)
+probabilities = sentiment_pipeline.predict_proba(new_texts)
+print(f"Sentiment: {'Positive' if predictions[0] == 1 else 'Negative'}")
+print(f"Confidence: {max(probabilities[0]):.2%}")</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Text Preprocessing for Singapore English</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import re
+
+def preprocess_sg_text(text):
+    """Preprocess text with Singapore-specific considerations."""
+    # Lowercase
+    text = text.lower()
+
+    # Handle Singapore-specific abbreviations
+    sg_abbrev = {
+        'hdb': 'housing development board',
+        'mrt': 'mass rapid transit',
+        'lta': 'land transport authority',
+        'bto': 'build to order',
+        'nea': 'national environment agency',
+        'ura': 'urban redevelopment authority',
+        'coe': 'certificate of entitlement',
+        'erp': 'electronic road pricing',
+    }
+    for abbr, full in sg_abbrev.items():
+        text = re.sub(r'\b' + abbr + r'\b', full, text)
+
+    # Remove special characters but keep important ones
+    text = re.sub(r'[^\w\s$%-]', '', text)
+
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
+# Example
+raw = "The LTA announced new MRT stations for the TEL"
+print(preprocess_sg_text(raw))
+# → "the land transport authority announced new mass rapid transit stations for the tel"</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Not handling Singlish</strong>: "shiok", "atas", "kiasu" won't be in standard stop word lists</li>
+        <li><strong>Small vocabulary</strong>: max_features too low misses important domain terms</li>
+        <li><strong>Ignoring class imbalance</strong>: If 90% of feedback is positive, the model just predicts "positive" always</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Try classifying different Singapore-related texts. Does the classifier handle transport vs housing well?</p>
+    <p>2. What happens when you input text that mixes topics? (e.g., "MRT station near new BTO")</p>
+    <p>3. How would you handle Singlish in a production NLP system?</p>
+</div>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Pipeline & Orchestration - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔄 Pipeline & Orchestration</h1>
+    <p class="breadcrumb">Home / Pipeline — End-to-end data pipeline management</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is a Data Pipeline?</h3></div>
+    <div class="concept-body">
+        <p>A data pipeline automates the movement and transformation of data from source to destination. Orchestration manages dependencies, scheduling, and failure recovery.</p>
+
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Pipeline DAG (Directed Acyclic Graph):
+
+  ingest_hdb ──┐
+  ingest_transport ──┤
+  ingest_population ──┼──▶ validate_all ──▶ build_aggregates
+  ingest_schools ──┤
+  ingest_energy ──┘</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🚀 Run the Full Pipeline</h3></div>
+    <div class="concept-body">
+        <button class="btn" onclick="runPipeline()">▶️ Execute Pipeline</button>
+        <div id="pipeline-output" class="output-box" style="margin-top: 15px; min-height: 100px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📜 Pipeline History</h3></div>
+    <div class="concept-body">
+        <button class="btn btn-secondary" onclick="loadPipelineHistory()">Load History</button>
+        <div id="pipeline-history" style="margin-top: 15px;">
+            <table class="table" id="history-table">
+                <thead><tr><th>Run ID</th><th>Step</th><th>Status</th><th>Duration</th><th>Started</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Pipeline Patterns</h3></div>
+    <div class="concept-body">
+        <h4>Retry with Exponential Backoff</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>import time, random
+
+def retry_with_backoff(func, max_retries=3, base_delay=1):
+    """Retry a function with exponential backoff + jitter."""
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+            print(f"Attempt {attempt+1} failed: {e}. Retrying in {delay:.1f}s")
+            time.sleep(delay)
+
+# Usage
+retry_with_backoff(lambda: ingest_csv_to_db("hdb_resale.csv"))</pre></div>
+
+        <h4>Idempotent Pipeline Steps</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre># BAD: Appends duplicates on re-run
+def ingest_bad(df, table):
+    df.to_sql(table, conn, if_exists='append')
+
+# GOOD: Idempotent — safe to re-run
+def ingest_good(df, table):
+    conn.execute(f"DELETE FROM {table}")  # Clear first
+    df.to_sql(table, conn, if_exists='append')
+
+# BETTER: Upsert pattern
+def ingest_upsert(df, table, key_col):
+    for _, row in df.iterrows():
+        conn.execute(f"""
+            INSERT INTO {table} ({', '.join(row.index)})
+            VALUES ({', '.join(['?']*len(row))})
+            ON CONFLICT({key_col}) DO UPDATE SET
+            {', '.join(f'{c}=excluded.{c}' for c in row.index if c != key_col)}
+        """, tuple(row))</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Run the full pipeline and observe the execution order and timing.</p>
+    <p>2. Modify the pipeline to add a new step that computes monthly price averages.</p>
+    <p>3. What happens if the "validate" step fails? How would you handle partial failures?</p>
+</div>
+
+<script>
+function loadPipelineHistory() {
+    apiCall('/api/pipeline/history', 'GET').then(data => {
+        const tbody = document.querySelector('#history-table tbody');
+        tbody.innerHTML = '';
+        if (data.history) {
+            data.history.forEach(row => {
+                const tr = document.createElement('tr');
+                const statusClass = row.status === 'completed' ? 'status-success' : 'status-error';
+                tr.innerHTML = `<td>${row.run_id}</td><td>${row.step_name}</td>
+                    <td><span class="${statusClass}">${row.status}</span></td>
+                    <td>${row.duration_seconds ? row.duration_seconds.toFixed(2) + 's' : '-'}</td>
+                    <td>${row.started_at || '-'}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

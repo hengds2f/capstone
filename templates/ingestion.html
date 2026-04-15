@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Data Ingestion - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📥 Data Ingestion</h1>
+    <p class="breadcrumb">Home / Data Ingestion — Load, validate, and store Singapore datasets</p>
+</div>
+
+{% if message %}
+<div class="alert alert-info">{{ message }}</div>
+{% endif %}
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is Data Ingestion?</h3></div>
+    <div class="concept-body">
+        <p>Data ingestion is the process of collecting, importing, and loading data from various sources into a storage system for analysis. In a data science workflow, this is the first step — without clean, reliable data, no analysis or model can succeed.</p>
+        <h4>🎯 Business Purpose</h4>
+        <p>In Singapore's context, data ingestion means pulling from sources like <strong>data.gov.sg</strong>, <strong>HDB</strong>, <strong>URA</strong>, <strong>LTA DataMall</strong>, and <strong>SingStat</strong> to build a unified data platform for urban analytics.</p>
+        <h4>🔑 Key Concepts</h4>
+        <ul>
+            <li><strong>Batch ingestion:</strong> Loading data at scheduled intervals (e.g., monthly HDB resale data)</li>
+            <li><strong>Streaming ingestion:</strong> Continuous data flow (e.g., MRT crowding updates)</li>
+            <li><strong>Schema validation:</strong> Checking data types, nulls, and constraints before loading</li>
+            <li><strong>Idempotency:</strong> Running ingestion multiple times produces the same result</li>
+        </ul>
+    </div>
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <div class="card-header"><h3>⚡ Quick Load — All Datasets</h3></div>
+        <form method="POST">
+            <input type="hidden" name="action" value="load_all">
+            <p>Load all sample Singapore datasets (HDB, Transport, Population, Schools, Energy) into the database.</p>
+            <button type="submit" class="btn btn-primary">🚀 Load All Datasets</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>📂 Upload Custom CSV</h3></div>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="upload_csv">
+            <div class="form-group">
+                <label>CSV File</label>
+                <input type="file" name="csv_file" accept=".csv" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Table Name</label>
+                <input type="text" name="table_name" class="form-control" placeholder="e.g., my_data" value="uploaded_data">
+            </div>
+            <button type="submit" class="btn btn-success">📤 Upload & Load</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h3>🌐 Mock API — data.gov.sg</h3></div>
+    <div class="concept-body">
+        <p>In production, you would call the data.gov.sg API directly. Here's how the mock API layer works:</p>
+        <div class="code-block">
+            <span class="lang-label">Python</span>
+            <pre>import requests
+
+# Real API call (requires internet access)
+url = "{{ mock_api.get('api_url', 'https://data.gov.sg/api/action/datastore_search') }}"
+response = requests.get(url, params={"limit": 100})
+data = response.json()
+
+# Our mock version returns sample data:
+{{ mock_api.get('sample_response', {})|tojson(indent=2) }}</pre>
+        </div>
+        <p><strong>Note:</strong> {{ mock_api.get('note', 'Register for an API key to access live data.') }}</p>
+    </div>
+</div>
+
+<div class="code-block">
+    <span class="lang-label">Python</span>
+    <pre># Sample ingestion code used in this app
+import pandas as pd
+from models.database import get_connection
+
+def ingest_csv_to_table(csv_path, table_name):
+    """Load a CSV file into a SQLite table."""
+    df = pd.read_csv(csv_path)
+
+    # Validate before loading
+    assert not df.empty, "DataFrame is empty"
+    assert df.isnull().sum().sum() / df.size < 0.5, "Too many nulls"
+
+    conn = get_connection()
+    df.to_sql(table_name, conn, if_exists='append', index=False)
+    conn.close()
+    return len(df)</pre>
+</div>
+
+{% if tables %}
+<div class="card">
+    <div class="card-header"><h3>📊 Current Database State</h3></div>
+    <table class="table table-striped">
+        <tr><th>Table</th><th>Row Count</th></tr>
+        {% for table, count in tables.items() %}
+        <tr><td>{{ table }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<div class="mistakes-box">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Not validating schema before loading:</strong> Mismatched columns cause silent data corruption</li>
+        <li><strong>Ignoring encoding issues:</strong> Singapore data often contains Chinese characters — use UTF-8</li>
+        <li><strong>No deduplication:</strong> Running ingestion twice without checking creates duplicates</li>
+        <li><strong>Hardcoding file paths:</strong> Use configuration files for production deployments</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Download data from <a href="https://data.gov.sg" target="_blank" style="color: var(--mrt-blue);">data.gov.sg</a> — try the "Resale Flat Prices" dataset.</p>
+    <p>2. Upload the CSV file using the form above.</p>
+    <p>3. Navigate to the SQL module and query your uploaded data.</p>
+</div>
+{% endblock %}

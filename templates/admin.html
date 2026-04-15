@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Admin & Testing - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔧 Admin & Testing</h1>
+    <p class="breadcrumb">Home / Admin — Data validation, API logs, and system health</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🔍 Data Validation</h3></div>
+    <div class="concept-body">
+        <p>Run validation checks on all ingested data to ensure quality and consistency.</p>
+        <button class="btn" onclick="runValidation()">✅ Run All Validations</button>
+        <div id="validation-output" class="output-box" style="margin-top: 15px; min-height: 150px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📊 Database Summary</h3></div>
+    <div class="concept-body">
+        <button class="btn btn-secondary" onclick="loadSummary()">Refresh Summary</button>
+        <div id="db-summary" style="margin-top: 15px;">
+            <table class="table" id="summary-table">
+                <thead><tr><th>Table</th><th>Row Count</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📜 API Access Logs</h3></div>
+    <div class="concept-body">
+        <button class="btn btn-secondary" onclick="loadApiLogs()">Load Recent Logs</button>
+        <div id="api-logs" style="margin-top: 15px;">
+            <table class="table" id="logs-table">
+                <thead><tr><th>Endpoint</th><th>Method</th><th>Status</th><th>Duration</th><th>Timestamp</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Writing Tests</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import pytest
+from app import create_app
+
+@pytest.fixture
+def client():
+    """Create test client."""
+    app = create_app()
+    app.config['TESTING'] = True
+    with app.test_client() as client:
+        yield client
+
+def test_api_summary(client):
+    """Test the /api/summary endpoint."""
+    response = client.get('/api/summary')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert 'tables' in data
+
+def test_model_train(client):
+    """Test model training endpoint."""
+    response = client.post('/api/model/train',
+                          json={'model_type': 'linear_regression'})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert 'metrics' in data
+
+def test_sql_readonly(client):
+    """Test that SQL endpoint blocks write operations."""
+    response = client.post('/api/sql/execute',
+                          json={'query': 'DROP TABLE raw_hdb_resale'})
+    assert response.status_code == 400  # Should reject
+
+# Run: pytest tests/ -v</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Testing Best Practices</h3></div>
+    <div class="concept-body">
+        <table class="table">
+            <tr><th>Test Type</th><th>What It Tests</th><th>Example</th></tr>
+            <tr><td>Unit Test</td><td>Single function</td><td>Test price prediction returns a number</td></tr>
+            <tr><td>Integration Test</td><td>Component interaction</td><td>Test ingestion → database → query</td></tr>
+            <tr><td>API Test</td><td>HTTP endpoints</td><td>Test GET /api/housing returns valid JSON</td></tr>
+            <tr><td>Data Validation</td><td>Data quality</td><td>Test no negative prices in fact table</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Run the data validation and fix any issues found.</p>
+    <p>2. Check the API logs — which endpoints are most frequently called?</p>
+    <p>3. Write a test that verifies the pipeline runs without errors.</p>
+</div>
+
+<script>
+function runValidation() {
+    apiCall('/api/validate', 'GET').then(data => {
+        const box = document.getElementById('validation-output');
+        if (data.results) {
+            let html = '';
+            data.results.forEach(r => {
+                const icon = r.status === 'pass' ? '✅' : '❌';
+                html += `<div style="margin-bottom: 8px;">${icon} <strong>${r.check}</strong>: ${r.message}</div>`;
+            });
+            box.innerHTML = html;
+        } else {
+            box.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+    });
+}
+
+function loadSummary() {
+    apiCall('/api/summary', 'GET').then(data => {
+        const tbody = document.querySelector('#summary-table tbody');
+        tbody.innerHTML = '';
+        if (data.tables) {
+            data.tables.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${t.name}</td><td>${t.rows}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+
+function loadApiLogs() {
+    const query = "SELECT endpoint, method, status_code, response_time_ms, created_at FROM api_logs ORDER BY created_at DESC LIMIT 20";
+    apiCall('/api/sql/execute', 'POST', {query: query}).then(data => {
+        const tbody = document.querySelector('#logs-table tbody');
+        tbody.innerHTML = '';
+        if (data.results) {
+            data.results.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.endpoint || row[0]}</td>
+                    <td>${row.method || row[1]}</td>
+                    <td>${row.status_code || row[2]}</td>
+                    <td>${row.response_time_ms || row[3] || '-'}ms</td>
+                    <td>${row.created_at || row[4]}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

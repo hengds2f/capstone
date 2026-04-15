@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Unsupervised Learning - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔍 Unsupervised Learning</h1>
+    <p class="breadcrumb">Home / Unsupervised — Clustering & dimensionality reduction</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is Unsupervised Learning?</h3></div>
+    <div class="concept-body">
+        <p>Unsupervised learning finds hidden patterns in data without labeled outputs. The model discovers structure on its own.</p>
+        <table class="table">
+            <tr><th>Task</th><th>Algorithm</th><th>SG Example</th></tr>
+            <tr><td>Clustering</td><td>K-Means, DBSCAN</td><td>Group HDB towns by price & size similarity</td></tr>
+            <tr><td>Dimensionality Reduction</td><td>PCA, t-SNE</td><td>Visualize 10-feature HDB data in 2D</td></tr>
+            <tr><td>Anomaly Detection</td><td>Isolation Forest</td><td>Detect unusual HDB transactions</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🚀 Run K-Means Clustering</h3></div>
+    <div class="concept-body">
+        <p>Cluster Singapore neighborhoods by housing characteristics (average price, area, transaction volume).</p>
+        <button class="btn" onclick="trainModel('kmeans')">🎯 Run K-Means (3 clusters)</button>
+        <div id="model-output" class="output-box" style="margin-top: 15px; min-height: 100px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 K-Means Algorithm</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+
+# Prepare neighborhood features
+neighborhood_data = df.groupby('town').agg(
+    avg_price=('resale_price', 'mean'),
+    avg_area=('floor_area_sqm', 'mean'),
+    transaction_count=('resale_price', 'count'),
+    price_std=('resale_price', 'std')
+).reset_index()
+
+# Always scale features before clustering!
+scaler = StandardScaler()
+features = scaler.fit_transform(neighborhood_data[['avg_price', 'avg_area', 'transaction_count']])
+
+# Fit K-Means
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+neighborhood_data['cluster'] = kmeans.fit_predict(features)
+
+# Interpret clusters
+for cluster_id in range(3):
+    cluster = neighborhood_data[neighborhood_data['cluster'] == cluster_id]
+    print(f"\nCluster {cluster_id}: {list(cluster['town'])}")
+    print(f"  Avg price: ${cluster['avg_price'].mean():,.0f}")
+    print(f"  Avg area: {cluster['avg_area'].mean():.0f} sqm")</pre></div>
+
+        <h4>Choosing K: The Elbow Method</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre># Try different values of K and plot inertia (within-cluster sum of squares)
+inertias = []
+K_range = range(1, 10)
+for k in K_range:
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    km.fit(features)
+    inertias.append(km.inertia_)
+
+# Plot elbow curve
+import plotly.graph_objects as go
+fig = go.Figure(data=go.Scatter(x=list(K_range), y=inertias, mode='lines+markers'))
+fig.update_layout(title='Elbow Method', xaxis_title='K', yaxis_title='Inertia')
+fig.show()
+
+# Look for the "elbow" — where adding more clusters stops reducing inertia significantly
+# Silhouette score confirms optimal K
+from sklearn.metrics import silhouette_score
+for k in range(2, 8):
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    labels = km.fit_predict(features)
+    score = silhouette_score(features, labels)
+    print(f"K={k}: Silhouette Score = {score:.3f}")</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 PCA — Dimensionality Reduction</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from sklearn.decomposition import PCA
+
+# Reduce 5 features to 2 dimensions for visualization
+pca = PCA(n_components=2)
+reduced = pca.fit_transform(features)
+
+print(f"Explained variance: {pca.explained_variance_ratio_}")
+# e.g., [0.65, 0.25] — first 2 components explain 90% of variation
+
+# Plot clusters in 2D
+fig = go.Figure()
+for cluster_id in range(3):
+    mask = neighborhood_data['cluster'] == cluster_id
+    fig.add_trace(go.Scatter(
+        x=reduced[mask, 0], y=reduced[mask, 1],
+        mode='markers+text',
+        text=neighborhood_data[mask]['town'],
+        name=f'Cluster {cluster_id}'
+    ))
+fig.update_layout(title='HDB Neighborhoods — PCA Visualization')
+fig.show()</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Not scaling features</strong>: K-Means uses distance — unscaled features with large ranges dominate</li>
+        <li><strong>Choosing K arbitrarily</strong>: Use elbow method + silhouette score + domain knowledge</li>
+        <li><strong>Interpreting clusters without context</strong>: Always map clusters back to meaningful labels</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Run K-Means and interpret the 3 clusters: which are premium, mid-range, and affordable neighborhoods?</p>
+    <p>2. Try K=4 and K=5. Do the additional clusters provide meaningful segmentation?</p>
+    <p>3. What features would you add to better distinguish mature vs new estates?</p>
+</div>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Flask Deployment - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🚀 Full-Stack Deployment</h1>
+    <p class="breadcrumb">Home / Deployment — Flask APIs, architecture, and production patterns</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Application Architecture</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Singapore Data Science Lab — Full-Stack Architecture:
+
+┌─────────────────────────────────────────────┐
+│              BROWSER (Frontend)             │
+│  HTML/CSS/JS  │  Plotly.js  │  Fetch API    │
+└──────────┬──────────────────┬───────────────┘
+           │ HTTP Requests     │ WebSocket (future)
+┌──────────▼──────────────────▼───────────────┐
+│             FLASK (Backend)                 │
+│  app.py (routes) │ api/routes.py (REST API) │
+├─────────────────────────────────────────────┤
+│           SERVICE LAYER                     │
+│  ingestion │ pipeline │ validation │ stream │
+├─────────────────────────────────────────────┤
+│           MODEL LAYER                       │
+│  ml_models │ timeseries │ nlp │ cv          │
+├─────────────────────────────────────────────┤
+│          DATABASE (SQLite)                  │
+│  Star Schema │ Fact Tables │ Views          │
+└─────────────────────────────────────────────┘</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 REST API Design</h3></div>
+    <div class="concept-body">
+        <p>Our application exposes a RESTful API at <code>/api/*</code>. Here are the available endpoints:</p>
+        <table class="table">
+            <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+            <tr><td>GET</td><td>/api/summary</td><td>Database summary statistics</td></tr>
+            <tr><td>GET</td><td>/api/housing</td><td>HDB resale data (with filters)</td></tr>
+            <tr><td>GET</td><td>/api/transport</td><td>Transport usage data</td></tr>
+            <tr><td>GET</td><td>/api/eda</td><td>Exploratory data analysis stats</td></tr>
+            <tr><td>POST</td><td>/api/model/train</td><td>Train ML model</td></tr>
+            <tr><td>POST</td><td>/api/model/predict</td><td>Predict HDB price</td></tr>
+            <tr><td>GET</td><td>/api/model/history</td><td>Model training history</td></tr>
+            <tr><td>POST</td><td>/api/pipeline/run</td><td>Run data pipeline</td></tr>
+            <tr><td>GET</td><td>/api/pipeline/history</td><td>Pipeline run history</td></tr>
+            <tr><td>POST</td><td>/api/sql/execute</td><td>Execute read-only SQL</td></tr>
+            <tr><td>POST</td><td>/api/stream/generate</td><td>Generate streaming events</td></tr>
+            <tr><td>POST</td><td>/api/stream/process</td><td>Process event window</td></tr>
+            <tr><td>GET</td><td>/api/stream/stats</td><td>Stream statistics</td></tr>
+            <tr><td>POST</td><td>/api/feedback</td><td>Submit learning feedback</td></tr>
+            <tr><td>GET</td><td>/api/validate</td><td>Run data validations</td></tr>
+        </table>
+
+        <h4>API Usage Example</h4>
+        <div class="code-block"><span class="lang-label">JavaScript</span><pre>// GET request with query parameters
+const response = await fetch('/api/housing?town=BISHAN&flat_type=4%20ROOM');
+const data = await response.json();
+console.log(data.data);  // Array of HDB records
+
+// POST request with JSON body
+const trainResponse = await fetch('/api/model/train', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({model_type: 'random_forest'})
+});
+const result = await trainResponse.json();
+console.log(`R² = ${result.metrics.r2_score}`);</pre></div>
+
+        <div class="code-block"><span class="lang-label">Python</span><pre>import requests
+
+# Using the API from Python
+base_url = "http://localhost:5000"
+
+# Get housing data
+resp = requests.get(f"{base_url}/api/housing", params={"town": "BISHAN"})
+data = resp.json()["data"]
+
+# Train a model
+resp = requests.post(f"{base_url}/api/model/train",
+                     json={"model_type": "linear_regression"})
+metrics = resp.json()["metrics"]
+print(f"Model R²: {metrics['r2_score']:.4f}")</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Flask Best Practices</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre># 1. Application Factory Pattern
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config')
+    # Register blueprints
+    from api.routes import api_bp
+    app.register_blueprint(api_bp)
+    return app
+
+# 2. Error Handling
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify(error="Resource not found"), 404
+
+@app.errorhandler(500)
+def server_error(e):
+    return jsonify(error="Internal server error"), 500
+
+# 3. Input Validation
+from werkzeug.utils import secure_filename
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    file = request.files.get('file')
+    if not file or not file.filename.endswith('.csv'):
+        return jsonify(error="CSV file required"), 400
+    filename = secure_filename(file.filename)
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+# 4. Security Headers
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Production Deployment Checklist</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Checklist</span><pre>Pre-Deployment:
+  ☐ Set DEBUG = False in production
+  ☐ Use environment variables for secrets (SECRET_KEY, DB credentials)
+  ☐ Run all tests: pytest tests/
+  ☐ Check for SQL injection vulnerabilities (use parameterized queries ✓)
+  ☐ Validate all user inputs
+
+Deployment Options:
+  1. Gunicorn + Nginx (Linux server)
+     $ gunicorn -w 4 -b 0.0.0.0:8000 "app:create_app()"
+
+  2. Docker
+     FROM python:3.11-slim
+     COPY requirements.txt .
+     RUN pip install -r requirements.txt
+     COPY . /app
+     WORKDIR /app
+     CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:create_app()"]
+
+  3. Cloud (AWS/GCP/Azure)
+     - AWS Elastic Beanstalk
+     - Google App Engine
+     - Azure App Service
+
+Post-Deployment:
+  ☐ Set up logging (structured JSON logs)
+  ☐ Monitor API response times
+  ☐ Set up database backups
+  ☐ Configure HTTPS (SSL/TLS certificate)</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Test 3 API endpoints using the browser or <code>curl</code>. Verify the response format.</p>
+    <p>2. What would you change to support PostgreSQL instead of SQLite?</p>
+    <p>3. Write a Dockerfile for this application and explain each instruction.</p>
+</div>
+{% endblock %}

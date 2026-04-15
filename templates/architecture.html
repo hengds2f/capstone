@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Data Architecture - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🏛️ Data Architecture</h1>
+    <p class="breadcrumb">Home / Architecture — Designing scalable data systems</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Star Schema Design</h3></div>
+    <div class="concept-body">
+        <p>The star schema is the most common data warehouse design pattern. It separates <strong>facts</strong> (measurable events) from <strong>dimensions</strong> (descriptive context).</p>
+        <h4>🎯 Singapore HDB Star Schema</h4>
+        <div class="code-block"><span class="lang-label">Schema</span><pre>                    ┌──────────────────┐
+                    │   dim_location   │
+                    │──────────────────│
+                    │ location_id (PK) │
+                    │ town             │
+                    │ block            │
+                    │ street_name      │
+                    │ planning_area    │
+                    │ floor_area_sqm   │
+                    └────────┬─────────┘
+                             │
+┌──────────────────┐   ┌─────┴────────────────┐   ┌────────────────────┐
+│    dim_time      │   │ fact_hdb_transactions │   │ dim_property_type  │
+│──────────────────│   │──────────────────────│   │────────────────────│
+│ time_id (PK)     │───│ transaction_id (PK)  │───│ property_type_id   │
+│ full_date        │   │ location_id (FK)     │   │ flat_type          │
+│ year             │   │ time_id (FK)         │   │ flat_model         │
+│ quarter          │   │ property_type_id (FK)│   │ lease_commence_yr  │
+│ month            │   │ resale_price         │   │ remaining_lease    │
+│ month_name       │   │ price_per_sqm        │   └────────────────────┘
+└──────────────────┘   └──────────────────────┘</pre></div>
+        <p><strong>Why star schema?</strong> Queries are intuitive — always start from the fact table and JOIN to dimensions. Aggregations are fast because fact tables contain only keys and measures.</p>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Normalization vs Denormalization</h3></div>
+    <div class="concept-body">
+        <table class="table">
+            <tr><th>Normalization (3NF)</th><th>Denormalization (Star Schema)</th></tr>
+            <tr><td>No data redundancy</td><td>Controlled redundancy for speed</td></tr>
+            <tr><td>More JOINs needed</td><td>Fewer JOINs, simpler queries</td></tr>
+            <tr><td>Better for OLTP (transactions)</td><td>Better for OLAP (analytics)</td></tr>
+            <tr><td>Smaller storage</td><td>Larger but faster reads</td></tr>
+        </table>
+
+        <h4>🎯 Our Schema Choices</h4>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- Normalized: dim_location stores locations once
+-- Each transaction references location_id (FK)
+-- Benefit: Update town name in one place
+
+-- Denormalized: raw_hdb_resale stores everything flat
+-- No JOINs needed for simple queries
+-- Benefit: Faster reads, simpler analysis queries</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Modeling Layers</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Architecture</span><pre>┌─────────────────────────────────────────────────┐
+│                 PRESENTATION LAYER               │
+│     Flask Templates → Charts → API Responses     │
+├─────────────────────────────────────────────────┤
+│                 BUSINESS LOGIC LAYER             │
+│  ML Models → Pipeline Orchestration → Validation │
+├─────────────────────────────────────────────────┤
+│                   DATA LAYER                     │
+│  Raw Tables → Dimensional Tables → Aggregates    │
+├─────────────────────────────────────────────────┤
+│                  STORAGE LAYER                   │
+│              SQLite Database File                │
+└─────────────────────────────────────────────────┘</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Design a snowflake schema by splitting dim_location into dim_town and dim_street.</p>
+    <p>2. Add a dim_weather_condition dimension to the transport fact table.</p>
+    <p>3. When would you choose a normalized schema over a star schema for Singapore data?</p>
+</div>
+{% endblock %}

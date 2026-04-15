@@ -1,0 +1,21 @@
+school_name,school_type,zone,cluster,address,postal_code,latitude,longitude,year,level,enrollment_count,num_classes,avg_class_size
+Raffles Institution,Secondary,South,S3,1 Raffles Institution Lane,575954,1.3926,103.8352,2024,Secondary,1800,60,30
+Hwa Chong Institution,Secondary,West,W4,661 Bukit Timah Road,269734,1.3260,103.8057,2024,Secondary,1650,55,30
+Anglo-Chinese School,Primary,Central,C2,50 Barker Road,309918,1.3155,103.8401,2024,Primary,1900,63,30
+Nanyang Girls High School,Secondary,West,W4,2 Linden Drive,288683,1.3267,103.8061,2024,Secondary,1200,40,30
+National Junior College,Junior College,Central,C1,37 Hillcrest Road,288913,1.3270,103.8115,2024,JC,1400,50,28
+Temasek Junior College,Junior College,East,E2,22 Bedok South Road,469278,1.3180,103.9313,2024,JC,1300,46,28
+Victoria School,Secondary,East,E1,2 Siglap Link,448880,1.3058,103.9310,2024,Secondary,1500,50,30
+Tao Nan School,Primary,East,E1,49 Marine Crescent,449761,1.3007,103.9155,2024,Primary,1750,58,30
+Ai Tong School,Primary,North,N3,100 Bright Hill Drive,579646,1.3620,103.8360,2024,Primary,2000,66,30
+Rosyth School,Primary,East,E2,21 Serangoon North Ave 4,555855,1.3700,103.8730,2024,Primary,1850,62,30
+Rulang Primary School,Primary,West,W1,31 Jurong West St 72,649271,1.3415,103.7001,2024,Primary,1700,57,30
+Pei Hwa Presbyterian Primary,Primary,West,W4,2 Bukit Timah Road,229814,1.3063,103.8430,2024,Primary,1600,53,30
+Chongfu School,Primary,North,N5,1 Yishun St 21,768577,1.4291,103.8380,2024,Primary,1550,52,30
+Maris Stella High School,Secondary,Central,C1,10 Ah Hood Road,329984,1.3378,103.8553,2024,Secondary,1350,45,30
+Dunman High School,Secondary,East,E1,10 Tanjong Rhu Road,436895,1.3018,103.8870,2024,Secondary,1600,53,30
+River Valley High School,Secondary,West,W2,6 Boon Lay Ave,649961,1.3380,103.7044,2024,Secondary,1200,40,30
+Bedok Green Primary School,Primary,East,E2,1 Bedok South Ave 2,469315,1.3192,103.9320,2024,Primary,1400,47,30
+Punggol Green Primary School,Primary,North-East,NE1,21 Edgefield Plains,828716,1.3960,103.9030,2024,Primary,1550,52,30
+Sengkang Green Primary School,Primary,North-East,NE1,31 Fernvale Link,797527,1.3880,103.8760,2024,Primary,1600,53,30
+Woodlands Primary School,Primary,North,N7,11 Woodlands St 81,738508,1.4380,103.7880,2024,Primary,1450,48,30

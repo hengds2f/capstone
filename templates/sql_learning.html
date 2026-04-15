@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}SQL Learning - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🗄️ SQL Learning Module</h1>
+    <p class="breadcrumb">Home / SQL — DDL, DML, Joins, CTEs, Window Functions & more</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Why SQL for Data Science?</h3></div>
+    <div class="concept-body">
+        <p>SQL (Structured Query Language) is the universal language for working with relational databases. In Singapore's data ecosystem, government datasets from HDB, URA, and LTA are often stored in relational databases. SQL lets you query, filter, aggregate, and join these datasets efficiently.</p>
+    </div>
+</div>
+
+<!-- Interactive SQL Console -->
+<div class="card">
+    <div class="card-header"><h3>🖥️ Interactive SQL Console</h3></div>
+    <div class="form-group">
+        <label>Enter SQL Query (SELECT only for safety)</label>
+        <textarea id="sql-input" class="form-control" rows="4" placeholder="SELECT * FROM raw_hdb_resale LIMIT 10;">SELECT * FROM raw_hdb_resale LIMIT 10;</textarea>
+    </div>
+    <button class="btn btn-primary" onclick="executeSQL()">▶ Execute</button>
+    <div id="sql-output" class="output-display" style="margin-top: 12px;"></div>
+</div>
+
+<!-- DDL Section -->
+<div class="concept-section" id="ddl-tab">
+    <div class="concept-header"><h3>1️⃣ SQL DDL — Data Definition Language</h3></div>
+    <div class="concept-body">
+        <p>DDL commands define the structure of your database: tables, columns, constraints, and indexes.</p>
+        <h4>🎯 Purpose</h4>
+        <p>Design a normalized schema for Singapore housing data with proper relationships and constraints.</p>
+
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- CREATE TABLE with constraints
+CREATE TABLE dim_location (
+    location_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    town VARCHAR(100) NOT NULL,
+    flat_type VARCHAR(50),
+    block VARCHAR(20),
+    street_name VARCHAR(200),
+    planning_area VARCHAR(100),
+    UNIQUE(town, block, street_name, flat_type)
+);
+
+-- CREATE INDEX for query performance
+CREATE INDEX idx_location_town ON dim_location(town);
+
+-- ALTER TABLE (in SQLite, limited to adding columns)
+-- ALTER TABLE dim_location ADD COLUMN postal_code VARCHAR(10);
+
+-- CREATE VIEW for reusable queries
+CREATE VIEW v_hdb_summary AS
+SELECT l.town, t.year, AVG(f.resale_price) as avg_price
+FROM fact_hdb_transactions f
+JOIN dim_location l ON f.location_id = l.location_id
+JOIN dim_time t ON f.time_id = t.time_id
+GROUP BY l.town, t.year;</pre></div>
+
+        <div class="output-display">Expected: Tables created with proper constraints and relationships</div>
+    </div>
+</div>
+
+<!-- DML Section -->
+<div class="concept-section" id="dml-tab">
+    <div class="concept-header"><h3>2️⃣ SQL DML — Data Manipulation Language</h3></div>
+    <div class="concept-body">
+        <p>DML commands insert, update, delete, and query data.</p>
+
+        <h4>INSERT</h4>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- Single INSERT
+INSERT INTO raw_hdb_resale (month, town, flat_type, resale_price)
+VALUES ('2024-07', 'BISHAN', '4 ROOM', 650000);
+
+-- Bulk INSERT
+INSERT INTO dim_time (full_date, year, quarter, month, month_name)
+VALUES
+    ('2024-01-01', 2024, 1, 1, 'January'),
+    ('2024-02-01', 2024, 1, 2, 'February'),
+    ('2024-03-01', 2024, 1, 3, 'March');</pre></div>
+
+        <h4>SELECT with Filters</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('SELECT town, flat_type, resale_price FROM raw_hdb_resale WHERE resale_price > 500000 ORDER BY resale_price DESC;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>SELECT town, flat_type, resale_price
+FROM raw_hdb_resale
+WHERE resale_price > 500000
+ORDER BY resale_price DESC;</pre></div>
+
+        <h4>UPDATE and DELETE</h4>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- UPDATE (be careful in production!)
+UPDATE raw_hdb_resale
+SET resale_price = 660000
+WHERE town = 'BISHAN' AND block = '184' AND month = '2024-01';
+
+-- DELETE with condition
+DELETE FROM raw_hdb_resale WHERE resale_price < 0;
+
+-- TRANSACTION for data integrity
+BEGIN TRANSACTION;
+    INSERT INTO raw_hdb_resale (month, town, flat_type, resale_price)
+    VALUES ('2024-07', 'PUNGGOL', '4 ROOM', 550000);
+    UPDATE pipeline_runs SET status = 'completed' WHERE run_id = 1;
+COMMIT;</pre></div>
+    </div>
+</div>
+
+<!-- Advanced SQL -->
+<div class="concept-section" id="advanced-tab">
+    <div class="concept-header"><h3>3️⃣ Advanced SQL</h3></div>
+    <div class="concept-body">
+        <h4>JOINs</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('SELECT l.town, t.year, t.month, p.flat_type, f.resale_price, f.price_per_sqm FROM fact_hdb_transactions f JOIN dim_location l ON f.location_id = l.location_id JOIN dim_time t ON f.time_id = t.time_id JOIN dim_property_type p ON f.property_type_id = p.property_type_id ORDER BY f.resale_price DESC LIMIT 15;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- Multi-table JOIN: Combine facts with dimensions
+SELECT l.town, t.year, t.month, p.flat_type,
+       f.resale_price, f.price_per_sqm
+FROM fact_hdb_transactions f
+JOIN dim_location l ON f.location_id = l.location_id
+JOIN dim_time t ON f.time_id = t.time_id
+JOIN dim_property_type p ON f.property_type_id = p.property_type_id
+ORDER BY f.resale_price DESC LIMIT 15;</pre></div>
+
+        <h4>GROUP BY, HAVING</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('SELECT town, COUNT(*) as transactions, ROUND(AVG(resale_price), 0) as avg_price, MIN(resale_price) as min_price, MAX(resale_price) as max_price FROM raw_hdb_resale GROUP BY town HAVING COUNT(*) >= 2 ORDER BY avg_price DESC;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>SELECT town, COUNT(*) as transactions,
+       ROUND(AVG(resale_price), 0) as avg_price,
+       MIN(resale_price) as min_price,
+       MAX(resale_price) as max_price
+FROM raw_hdb_resale
+GROUP BY town
+HAVING COUNT(*) >= 2
+ORDER BY avg_price DESC;</pre></div>
+
+        <h4>Subqueries</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('SELECT town, resale_price, flat_type FROM raw_hdb_resale WHERE resale_price > (SELECT AVG(resale_price) FROM raw_hdb_resale) ORDER BY resale_price DESC;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- Towns with above-average prices
+SELECT town, resale_price, flat_type
+FROM raw_hdb_resale
+WHERE resale_price > (SELECT AVG(resale_price) FROM raw_hdb_resale)
+ORDER BY resale_price DESC;</pre></div>
+
+        <h4>CTEs (Common Table Expressions)</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('WITH town_stats AS (SELECT town, AVG(resale_price) as avg_price, COUNT(*) as cnt FROM raw_hdb_resale GROUP BY town), overall AS (SELECT AVG(resale_price) as overall_avg FROM raw_hdb_resale) SELECT t.town, ROUND(t.avg_price, 0) as avg_price, t.cnt, ROUND(o.overall_avg, 0) as overall_avg, ROUND(t.avg_price - o.overall_avg, 0) as diff FROM town_stats t, overall o ORDER BY diff DESC;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>WITH town_stats AS (
+    SELECT town, AVG(resale_price) as avg_price, COUNT(*) as cnt
+    FROM raw_hdb_resale GROUP BY town
+),
+overall AS (
+    SELECT AVG(resale_price) as overall_avg FROM raw_hdb_resale
+)
+SELECT t.town, ROUND(t.avg_price, 0) as avg_price, t.cnt,
+       ROUND(o.overall_avg, 0) as overall_avg,
+       ROUND(t.avg_price - o.overall_avg, 0) as diff
+FROM town_stats t, overall o
+ORDER BY diff DESC;</pre></div>
+
+        <h4>Window Functions</h4>
+        <button class="btn btn-sm btn-primary" onclick="loadSampleSQL('SELECT town, flat_type, resale_price, RANK() OVER (PARTITION BY town ORDER BY resale_price DESC) as price_rank, ROUND(AVG(resale_price) OVER (PARTITION BY town), 0) as town_avg FROM raw_hdb_resale ORDER BY town, price_rank;')">▶ Run</button>
+        <div class="code-block"><span class="lang-label">SQL</span><pre>SELECT town, flat_type, resale_price,
+    RANK() OVER (PARTITION BY town ORDER BY resale_price DESC) as price_rank,
+    ROUND(AVG(resale_price) OVER (PARTITION BY town), 0) as town_avg
+FROM raw_hdb_resale
+ORDER BY town, price_rank;</pre></div>
+    </div>
+</div>
+
+<div class="mistakes-box">
+    <h5>⚠️ Common SQL Mistakes</h5>
+    <ul>
+        <li><strong>SELECT * in production:</strong> Always specify columns to avoid unnecessary data transfer</li>
+        <li><strong>Missing WHERE on UPDATE/DELETE:</strong> Can corrupt your entire table</li>
+        <li><strong>Not using indexes:</strong> Queries on large tables become extremely slow</li>
+        <li><strong>Cartesian joins:</strong> Forgetting JOIN conditions creates massive result sets</li>
+        <li><strong>NULL handling:</strong> NULL is not equal to anything — use IS NULL, not = NULL</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>Use the SQL console above to answer these questions:</p>
+    <ol>
+        <li>Find the top 5 most expensive towns by average resale price</li>
+        <li>Count transactions per flat type</li>
+        <li>Write a CTE that ranks each transaction within its town</li>
+        <li>Find towns where the average price exceeds $500,000</li>
+    </ol>
+</div>
+{% endblock %}

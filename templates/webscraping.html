@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Web Scraping - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🕸️ Web Scraping & Data Extraction</h1>
+    <p class="breadcrumb">Home / Web Scraping — Ethical data extraction techniques</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Extraction Methods</h3></div>
+    <div class="concept-body">
+        <p>Not all data comes in neat CSV files. Web scraping extracts data from websites, while APIs provide structured access. Always check the website's terms of service and robots.txt before scraping.</p>
+
+        <h4>🎯 Method Comparison</h4>
+        <table class="table">
+            <tr><th>Method</th><th>Tool</th><th>Best For</th><th>SG Example</th></tr>
+            <tr><td>REST API</td><td>requests</td><td>Structured data from APIs</td><td>data.gov.sg API</td></tr>
+            <tr><td>HTML Scraping</td><td>BeautifulSoup</td><td>Static web pages</td><td>School info from MOE website</td></tr>
+            <tr><td>Table Extraction</td><td>pandas.read_html</td><td>HTML tables</td><td>Wikipedia Singapore data</td></tr>
+            <tr><td>Dynamic Pages</td><td>Selenium</td><td>JavaScript-rendered content</td><td>PropertyGuru listings</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 API Data Extraction</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import requests
+import pandas as pd
+
+# Example: data.gov.sg API call
+# Note: This is the real API pattern — may require registration
+url = "https://data.gov.sg/api/action/datastore_search"
+params = {
+    "resource_id": "f1765b54-a209-4718-8d38-a39237f502b3",  # HDB Resale
+    "limit": 100
+}
+
+response = requests.get(url, params=params, timeout=30)
+if response.status_code == 200:
+    data = response.json()
+    records = data['result']['records']
+    df = pd.DataFrame(records)
+    print(f"Loaded {len(df)} records")
+else:
+    print(f"Error: {response.status_code}")
+
+# LTA DataMall API (requires API key)
+headers = {"AccountKey": "YOUR_API_KEY", "accept": "application/json"}
+lta_url = "http://datamall2.mytransport.sg/ltaodataservice/PassengerVolume"
+# response = requests.get(lta_url, headers=headers)</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 HTML Scraping with BeautifulSoup</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from bs4 import BeautifulSoup
+import requests
+
+# Example: Scraping public information (educational purpose)
+url = "https://en.wikipedia.org/wiki/List_of_MRT_stations_in_Singapore"
+
+response = requests.get(url, timeout=30)
+soup = BeautifulSoup(response.content, 'html.parser')
+
+# Find all tables
+tables = soup.find_all('table', class_='wikitable')
+
+# Or use pandas for direct table extraction
+dfs = pd.read_html(url)
+mrt_table = dfs[0]  # First table on the page
+print(mrt_table.head())
+
+# IMPORTANT: Always respect robots.txt and rate limits
+import time
+time.sleep(1)  # Be polite — wait between requests</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Ethical Scraping Guidelines</h3></div>
+    <div class="concept-body">
+        <div class="alert alert-warning">
+            <strong>Important:</strong> Always follow these ethical guidelines when scraping data.
+        </div>
+        <ul>
+            <li>✅ Check <code>robots.txt</code> before scraping any website</li>
+            <li>✅ Respect rate limits — add delays between requests</li>
+            <li>✅ Use official APIs when available (data.gov.sg, LTA DataMall)</li>
+            <li>✅ Cache responses to avoid repeated requests</li>
+            <li>✅ Only scrape publicly available information</li>
+            <li>❌ Don't scrape personal data without consent</li>
+            <li>❌ Don't overwhelm servers with rapid requests</li>
+            <li>❌ Don't violate terms of service</li>
+        </ul>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Use <code>pandas.read_html()</code> to extract a table from Wikipedia about Singapore demographics.</p>
+    <p>2. Write a function that calls the data.gov.sg API and handles pagination.</p>
+    <p>3. Build a caching layer that stores API responses locally to avoid repeat calls.</p>
+</div>
+{% endblock %}

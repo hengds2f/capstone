@@ -1,0 +1,101 @@
+planning_area,year,age_group,gender,population_count,density_per_sqkm
+Ang Mo Kio,2024,0-14,Male,8500,2850
+Ang Mo Kio,2024,0-14,Female,8200,2850
+Ang Mo Kio,2024,15-24,Male,9200,2850
+Ang Mo Kio,2024,15-24,Female,8800,2850
+Ang Mo Kio,2024,25-44,Male,18500,2850
+Ang Mo Kio,2024,25-44,Female,19200,2850
+Ang Mo Kio,2024,45-64,Male,16800,2850
+Ang Mo Kio,2024,45-64,Female,17500,2850
+Ang Mo Kio,2024,65+,Male,12000,2850
+Ang Mo Kio,2024,65+,Female,14200,2850
+Bedok,2024,0-14,Male,11200,3200
+Bedok,2024,0-14,Female,10800,3200
+Bedok,2024,15-24,Male,12500,3200
+Bedok,2024,15-24,Female,12000,3200
+Bedok,2024,25-44,Male,24000,3200
+Bedok,2024,25-44,Female,25200,3200
+Bedok,2024,45-64,Male,21500,3200
+Bedok,2024,45-64,Female,22800,3200
+Bedok,2024,65+,Male,14500,3200
+Bedok,2024,65+,Female,16800,3200
+Tampines,2024,0-14,Male,13500,3400
+Tampines,2024,0-14,Female,13000,3400
+Tampines,2024,15-24,Male,14500,3400
+Tampines,2024,15-24,Female,14000,3400
+Tampines,2024,25-44,Male,28000,3400
+Tampines,2024,25-44,Female,29500,3400
+Tampines,2024,45-64,Male,25000,3400
+Tampines,2024,45-64,Female,26500,3400
+Tampines,2024,65+,Male,12000,3400
+Tampines,2024,65+,Female,14500,3400
+Jurong West,2024,0-14,Male,14000,3100
+Jurong West,2024,0-14,Female,13500,3100
+Jurong West,2024,15-24,Male,15200,3100
+Jurong West,2024,15-24,Female,14800,3100
+Jurong West,2024,25-44,Male,29500,3100
+Jurong West,2024,25-44,Female,31000,3100
+Jurong West,2024,45-64,Male,26000,3100
+Jurong West,2024,45-64,Female,27500,3100
+Jurong West,2024,65+,Male,10500,3100
+Jurong West,2024,65+,Female,12800,3100
+Woodlands,2024,0-14,Male,14500,2900
+Woodlands,2024,0-14,Female,14000,2900
+Woodlands,2024,15-24,Male,15800,2900
+Woodlands,2024,15-24,Female,15200,2900
+Woodlands,2024,25-44,Male,30000,2900
+Woodlands,2024,25-44,Female,31500,2900
+Woodlands,2024,45-64,Male,27500,2900
+Woodlands,2024,45-64,Female,29000,2900
+Woodlands,2024,65+,Male,11000,2900
+Woodlands,2024,65+,Female,13500,2900
+Sengkang,2024,0-14,Male,16000,3500
+Sengkang,2024,0-14,Female,15500,3500
+Sengkang,2024,15-24,Male,12000,3500
+Sengkang,2024,15-24,Female,11500,3500
+Sengkang,2024,25-44,Male,32000,3500
+Sengkang,2024,25-44,Female,33500,3500
+Sengkang,2024,45-64,Male,18000,3500
+Sengkang,2024,45-64,Female,19500,3500
+Sengkang,2024,65+,Male,4500,3500
+Sengkang,2024,65+,Female,5800,3500
+Punggol,2024,0-14,Male,18000,3800
+Punggol,2024,0-14,Female,17500,3800
+Punggol,2024,15-24,Male,10000,3800
+Punggol,2024,15-24,Female,9500,3800
+Punggol,2024,25-44,Male,35000,3800
+Punggol,2024,25-44,Female,36500,3800
+Punggol,2024,45-64,Male,15000,3800
+Punggol,2024,45-64,Female,16500,3800
+Punggol,2024,65+,Male,3000,3800
+Punggol,2024,65+,Female,4200,3800
+Bukit Merah,2024,0-14,Male,6500,4200
+Bukit Merah,2024,0-14,Female,6200,4200
+Bukit Merah,2024,15-24,Male,7000,4200
+Bukit Merah,2024,15-24,Female,6800,4200
+Bukit Merah,2024,25-44,Male,15000,4200
+Bukit Merah,2024,25-44,Female,15800,4200
+Bukit Merah,2024,45-64,Male,14500,4200
+Bukit Merah,2024,45-64,Female,15200,4200
+Bukit Merah,2024,65+,Male,11000,4200
+Bukit Merah,2024,65+,Female,13500,4200
+Toa Payoh,2024,0-14,Male,5800,5100
+Toa Payoh,2024,0-14,Female,5500,5100
+Toa Payoh,2024,15-24,Male,6200,5100
+Toa Payoh,2024,15-24,Female,6000,5100
+Toa Payoh,2024,25-44,Male,12500,5100
+Toa Payoh,2024,25-44,Female,13200,5100
+Toa Payoh,2024,45-64,Male,13000,5100
+Toa Payoh,2024,45-64,Female,13800,5100
+Toa Payoh,2024,65+,Male,10500,5100
+Toa Payoh,2024,65+,Female,12800,5100
+Queenstown,2024,0-14,Male,5200,4500
+Queenstown,2024,0-14,Female,5000,4500
+Queenstown,2024,15-24,Male,5800,4500
+Queenstown,2024,15-24,Female,5500,4500
+Queenstown,2024,25-44,Male,13000,4500
+Queenstown,2024,25-44,Female,13800,4500
+Queenstown,2024,45-64,Male,11500,4500
+Queenstown,2024,45-64,Female,12200,4500
+Queenstown,2024,65+,Male,9500,4500
+Queenstown,2024,65+,Female,11800,4500

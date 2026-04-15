@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Singapore Data Science Lab{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>🇸🇬 SG Data Science Lab</h2>
+            <div class="subtitle">Full Lifecycle Learning Platform</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Overview</div>
+            <a href="/" class="nav-link"><span class="icon">🏠</span> Home Dashboard</a>
+            <a href="/ingestion" class="nav-link"><span class="icon">📥</span> Data Ingestion</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Fundamentals</div>
+            <a href="/sql" class="nav-link"><span class="icon">🗄️</span> SQL Learning</a>
+            <a href="/wrangling" class="nav-link"><span class="icon">🐍</span> Python Wrangling</a>
+            <a href="/eda" class="nav-link"><span class="icon">🔍</span> EDA</a>
+            <a href="/visualization" class="nav-link"><span class="icon">📊</span> Visualization</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Data Engineering</div>
+            <a href="/bigdata" class="nav-link"><span class="icon">🏗️</span> Big Data</a>
+            <a href="/architecture" class="nav-link"><span class="icon">🏛️</span> Architecture</a>
+            <a href="/dataflow" class="nav-link"><span class="icon">🔄</span> Data Flow</a>
+            <a href="/webscraping" class="nav-link"><span class="icon">🕸️</span> Web Scraping</a>
+            <a href="/warehouse" class="nav-link"><span class="icon">🏬</span> Data Warehouse</a>
+            <a href="/pipeline" class="nav-link"><span class="icon">⚙️</span> Pipeline</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Advanced Processing</div>
+            <a href="/outofcore" class="nav-link"><span class="icon">💾</span> Out-of-Core</a>
+            <a href="/distributed" class="nav-link"><span class="icon">🌐</span> Distributed</a>
+            <a href="/streaming" class="nav-link"><span class="icon">📡</span> Streaming</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Machine Learning</div>
+            <a href="/probability" class="nav-link"><span class="icon">🎲</span> Probability</a>
+            <a href="/supervised" class="nav-link"><span class="icon">🎯</span> Supervised ML</a>
+            <a href="/unsupervised" class="nav-link"><span class="icon">🧩</span> Unsupervised ML</a>
+            <a href="/timeseries" class="nav-link"><span class="icon">📈</span> Time Series</a>
+            <a href="/neuralnet" class="nav-link"><span class="icon">🧠</span> Neural Networks</a>
+            <a href="/cv" class="nav-link"><span class="icon">👁️</span> Computer Vision</a>
+            <a href="/nlp" class="nav-link"><span class="icon">💬</span> NLP</a>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-section-title">Deployment</div>
+            <a href="/deployment" class="nav-link"><span class="icon">🚀</span> Deployment</a>
+            <a href="/admin" class="nav-link"><span class="icon">🔧</span> Admin</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for msg in messages %}
+        <div class="alert alert-info">{{ msg }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+        <div class="footer">
+            Singapore Data Science Lab &mdash; Educational Project &mdash; Built with Flask, SQLite, Pandas, scikit-learn & Plotly
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

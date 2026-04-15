@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Out-of-Core Processing - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📦 Out-of-Core Processing</h1>
+    <p class="breadcrumb">Home / Out-of-Core — Processing data larger than memory</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 When Data Exceeds Memory</h3></div>
+    <div class="concept-body">
+        <p>When datasets are too large to fit in RAM, we process them in chunks. This is called "out-of-core" or "external memory" processing.</p>
+
+        <h4>🎯 Singapore Scale</h4>
+        <p>HDB resale data from 1990-2024 contains ~900,000 records. While this fits in memory, real-world datasets from LTA (taxi GPS, ERP) can exceed 100GB.</p>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Chunked CSV Processing</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
+
+# Process large CSV in chunks of 10,000 rows
+chunk_results = []
+for chunk in pd.read_csv('large_hdb_data.csv', chunksize=10000):
+    # Filter within each chunk
+    filtered = chunk[chunk['town'] == 'BISHAN']
+    # Aggregate within chunk
+    summary = filtered.groupby('flat_type')['resale_price'].mean()
+    chunk_results.append(summary)
+
+# Combine all chunk results
+final = pd.concat(chunk_results).groupby(level=0).mean()
+print(final)</pre></div>
+
+        <h4>Generator Pattern for Memory Efficiency</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>def process_large_file(filepath, batch_size=5000):
+    """Generator that yields processed batches."""
+    reader = pd.read_csv(filepath, chunksize=batch_size)
+    for i, chunk in enumerate(reader):
+        # Clean each chunk
+        chunk['resale_price'] = pd.to_numeric(chunk['resale_price'], errors='coerce')
+        chunk = chunk.dropna(subset=['resale_price'])
+        yield chunk
+        print(f"Processed batch {i+1}: {len(chunk)} rows")
+
+# Usage — memory never holds more than one batch
+for batch in process_large_file('hdb_resale_full.csv'):
+    batch.to_sql('raw_hdb_resale', conn, if_exists='append', index=False)</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 SQLite as Out-of-Core Engine</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import sqlite3
+import pandas as pd
+
+# SQLite handles data on disk — no need to load everything into RAM
+conn = sqlite3.connect('singapore_data.db')
+
+# Aggregate 1M+ rows without loading into memory
+query = """
+    SELECT town, flat_type,
+           COUNT(*) as count,
+           AVG(resale_price) as avg_price
+    FROM raw_hdb_resale
+    GROUP BY town, flat_type
+    HAVING COUNT(*) > 100
+    ORDER BY avg_price DESC
+"""
+result = pd.read_sql(query, conn)  # Only the result fits in RAM</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Memory-Mapped Files</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import numpy as np
+
+# Create a memory-mapped array (stored on disk, accessed as if in RAM)
+large_array = np.memmap('transport_data.dat', dtype='float32',
+                        mode='w+', shape=(1000000, 10))
+
+# Write data in chunks
+for i in range(0, 1000000, 10000):
+    large_array[i:i+10000] = np.random.randn(10000, 10)
+
+# Access slices without loading entire array
+subset = large_array[500000:500100]  # Only loads 100 rows
+print(f"Mean of subset: {subset.mean():.4f}")</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Loading everything first</strong>: Don't call <code>pd.read_csv()</code> without <code>chunksize</code> on large files</li>
+        <li><strong>Appending to a list forever</strong>: Aggregate within each chunk, don't store all chunks</li>
+        <li><strong>Not using dtypes</strong>: Specify <code>dtype={'price': 'float32'}</code> to halve memory usage</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Process hdb_resale.csv in chunks of 20 rows and compute the overall average price.</p>
+    <p>2. Write a generator that yields only 4-ROOM flats from the CSV.</p>
+    <p>3. Compare memory usage of <code>float64</code> vs <code>float32</code> for the resale_price column.</p>
+</div>
+{% endblock %}

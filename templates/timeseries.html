@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Time Series Forecasting - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📈 Time Series Forecasting</h1>
+    <p class="breadcrumb">Home / Time Series — Forecasting transport demand and price trends</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Time Series Components</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Concept</span><pre>A time series Y(t) can be decomposed into:
+
+Y(t) = Trend + Seasonality + Residual
+
+┌────────────────────────────────────┐
+│ Original:  ∿∿∿∿∿↗∿∿∿∿∿↗∿∿∿∿       │
+│ Trend:     ────────────↗──────     │  Long-term direction
+│ Seasonal:  ∿∿∿∿∿ ∿∿∿∿∿ ∿∿∿∿      │  Repeating pattern
+│ Residual:  ···  · · ··· ·  ···    │  Random noise
+└────────────────────────────────────┘
+
+SG Examples:
+- Trend: MRT ridership growing year over year
+- Seasonality: Higher transport usage on weekdays
+- Residual: Unexpected spikes during events (NDP, F1)</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🚀 Forecast Transport Usage</h3></div>
+    <div class="concept-body">
+        {% if charts %}
+            {% for chart_name, chart_json in charts.items() %}
+            <div id="chart-{{ chart_name }}" style="width: 100%; height: 400px; margin-bottom: 20px;"></div>
+            <script>
+                var chartData = {{ chart_json | safe }};
+                Plotly.newPlot('chart-{{ chart_name }}', chartData.data, chartData.layout, {responsive: true});
+            </script>
+            {% endfor %}
+        {% else %}
+            <p>Load the data pipeline first to see forecasting charts. <a href="/pipeline">Go to Pipeline →</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Simple Moving Average (SMA)</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
+import numpy as np
+
+# MRT daily ridership data
+dates = pd.date_range('2024-01-01', periods=90, freq='D')
+ridership = 3000000 + np.cumsum(np.random.randn(90) * 50000)
+
+ts = pd.Series(ridership, index=dates)
+
+# Simple Moving Average — smooths noise
+sma_7 = ts.rolling(window=7).mean()    # 7-day moving average
+sma_30 = ts.rolling(window=30).mean()  # 30-day moving average
+
+# Forecast: extend the last window average
+forecast_value = sma_7.iloc[-1]
+print(f"SMA-7 forecast for next day: {forecast_value:,.0f} riders")
+
+# Weighted Moving Average — recent data matters more
+weights = np.array([1, 2, 3, 4, 5, 6, 7]) / 28
+wma = ts.rolling(window=7).apply(lambda x: np.dot(x, weights))</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Exponential Smoothing</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre># Exponential smoothing — decaying weights on older observations
+def exponential_smoothing(series, alpha=0.3):
+    """
+    alpha: smoothing factor (0 < alpha < 1)
+    - High alpha (0.8): more weight on recent data
+    - Low alpha (0.2): smoother, less reactive
+    """
+    smoothed = [series.iloc[0]]
+    for i in range(1, len(series)):
+        new_value = alpha * series.iloc[i] + (1 - alpha) * smoothed[-1]
+        smoothed.append(new_value)
+    return pd.Series(smoothed, index=series.index)
+
+# Apply with different alpha values
+smooth_low = exponential_smoothing(ts, alpha=0.1)   # Very smooth
+smooth_mid = exponential_smoothing(ts, alpha=0.3)   # Balanced
+smooth_high = exponential_smoothing(ts, alpha=0.8)  # Reactive
+
+# Holt's method: handles trend
+from statsmodels.tsa.holtwinters import ExponentialSmoothing
+model = ExponentialSmoothing(ts, trend='add', seasonal=None)
+fitted = model.fit()
+forecast = fitted.forecast(steps=14)  # 14-day forecast</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Stationarity & Differencing</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from statsmodels.tsa.stattools import adfuller
+
+# Augmented Dickey-Fuller test for stationarity
+result = adfuller(ts)
+print(f"ADF Statistic: {result[0]:.4f}")
+print(f"p-value: {result[1]:.6f}")
+print(f"Stationary? {'Yes' if result[1] < 0.05 else 'No — need differencing'}")
+
+# First-order differencing: removes trend
+ts_diff = ts.diff().dropna()
+
+# Check stationarity again
+result2 = adfuller(ts_diff)
+print(f"After differencing — p-value: {result2[1]:.6f}")
+
+# ARIMA(p, d, q): combines AR, differencing, MA
+# p = autoregressive order, d = differencing, q = moving average order
+from statsmodels.tsa.arima.model import ARIMA
+model = ARIMA(ts, order=(2, 1, 1))  # ARIMA(2,1,1)
+fitted = model.fit()
+forecast = fitted.forecast(steps=7)
+print(f"7-day forecast: {forecast.values}")</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Forecasting non-stationary data</strong>: Always check stationarity before applying ARIMA</li>
+        <li><strong>Overfitting to noise</strong>: Large window = smoother forecast but misses recent changes</li>
+        <li><strong>Ignoring seasonality</strong>: MRT data has strong weekly patterns — use seasonal decomposition</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Compare SMA-7 vs SMA-30 forecasts. Which is more responsive to changes?</p>
+    <p>2. Try different alpha values (0.1, 0.5, 0.9) for exponential smoothing. What happens?</p>
+    <p>3. Would you use time series forecasting for HDB prices? Why or why not?</p>
+</div>
+{% endblock %}

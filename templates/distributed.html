@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Distributed Processing - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🌐 Distributed Batch Processing</h1>
+    <p class="breadcrumb">Home / Distributed — Scaling with Dask, PySpark, and MapReduce</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Why Distributed Processing?</h3></div>
+    <div class="concept-body">
+        <p>When a single machine can't handle the data or compute, we distribute work across a cluster of machines.</p>
+        <table class="table">
+            <tr><th>Framework</th><th>Best For</th><th>SG Use Case</th></tr>
+            <tr><td>Dask</td><td>Scaling pandas workflows</td><td>Processing 10 years of HDB data</td></tr>
+            <tr><td>PySpark</td><td>Petabyte-scale ETL</td><td>LTA taxi GPS data (billions of rows)</td></tr>
+            <tr><td>MapReduce</td><td>Batch processing concept</td><td>Counting word frequency across documents</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Dask — Parallel Pandas</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import dask.dataframe as dd
+
+# Dask reads data lazily — no memory overflow
+ddf = dd.read_csv('hdb_resale_*.csv')   # Multiple files as partitions
+
+# Same pandas API — but executed in parallel
+result = (
+    ddf[ddf['town'] == 'BISHAN']
+    .groupby('flat_type')['resale_price']
+    .mean()
+    .compute()   # ← Triggers actual computation
+)
+print(result)
+
+# Key Dask concepts:
+# 1. Lazy evaluation — nothing runs until .compute()
+# 2. Partitions — data is split across workers
+# 3. Task graph — Dask builds a DAG of operations</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 PySpark — Big Data at Scale</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from pyspark.sql import SparkSession
+from pyspark.sql.functions import avg, count, col
+
+spark = SparkSession.builder.appName("SG_HDB").getOrCreate()
+
+# Read data into a distributed DataFrame
+df = spark.read.csv("hdb_resale_full.csv", header=True, inferSchema=True)
+
+# Transformations (lazy — builds execution plan)
+result = (
+    df.filter(col("town") == "BISHAN")
+      .groupBy("flat_type")
+      .agg(
+          avg("resale_price").alias("avg_price"),
+          count("*").alias("count")
+      )
+      .orderBy("avg_price", ascending=False)
+)
+
+# Action (triggers execution across cluster)
+result.show()
+
+# +----------+----------+-----+
+# | flat_type| avg_price|count|
+# +----------+----------+-----+
+# |EXECUTIVE | 820000.0 |  45 |
+# | 5 ROOM   | 650000.0 | 120 |
+# | 4 ROOM   | 480000.0 | 350 |
+# | 3 ROOM   | 350000.0 | 200 |
+# +----------+----------+-----+</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 MapReduce Pattern</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from functools import reduce
+from collections import Counter
+
+# Simulating MapReduce for HDB price analysis
+data_partitions = [
+    [("BISHAN", 500000), ("TAMPINES", 420000), ("BISHAN", 520000)],
+    [("TAMPINES", 430000), ("BISHAN", 510000), ("YISHUN", 350000)],
+    [("YISHUN", 360000), ("TAMPINES", 440000), ("YISHUN", 340000)],
+]
+
+# MAP phase: Each partition emits (key, value) pairs
+def map_fn(partition):
+    return [(town, price) for town, price in partition]
+
+# SHUFFLE: Group by key (handled by framework)
+def shuffle(mapped_results):
+    groups = {}
+    for pairs in mapped_results:
+        for town, price in pairs:
+            groups.setdefault(town, []).append(price)
+    return groups
+
+# REDUCE phase: Aggregate values for each key
+def reduce_fn(key, values):
+    return (key, sum(values) / len(values), len(values))
+
+# Execute MapReduce
+mapped = [map_fn(p) for p in data_partitions]          # Parallel
+shuffled = shuffle(mapped)                              # Framework
+results = [reduce_fn(k, v) for k, v in shuffled.items()] # Parallel
+
+for town, avg_price, count in results:
+    print(f"{town}: avg ${avg_price:,.0f} ({count} transactions)")</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Using .collect() on large data</strong>: Pulls all data to driver — causes OOM. Use .show() or .take(10)</li>
+        <li><strong>Not partitioning properly</strong>: Too few partitions = uneven load; too many = overhead</li>
+        <li><strong>Ignoring data skew</strong>: If one key (e.g., "WOODLANDS") has 10x more data, that partition becomes a bottleneck</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Write a MapReduce function that finds the maximum price per town.</p>
+    <p>2. When would you choose Dask over PySpark? List 3 criteria.</p>
+    <p>3. Explain what "data skew" means using an HDB resale example.</p>
+</div>
+{% endblock %}

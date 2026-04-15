@@ -1,0 +1,21 @@
+module_name,rating,comment
+Data Ingestion,5,Very clear explanation of ETL process with real HDB data
+SQL Learning,4,Great examples but I wish there were more window function exercises
+EDA Module,5,The correlation heatmap for housing prices was really insightful
+Visualization,5,Plotly charts are interactive and beautiful
+Machine Learning,4,Good intro to supervised learning with Singapore housing data
+NLP Module,3,Would be nice to have more text data examples from Singapore context
+Pipeline Module,5,Understanding data pipelines through transport data was brilliant
+Big Data,4,Good conceptual overview of batch vs streaming architecture
+Web Scraping,4,Practical scraping examples with proper ethics discussion
+Time Series,5,ARIMA forecasting for HDB prices was very educational
+Data Ingestion,3,Had some trouble with CSV upload at first but figured it out
+SQL Learning,5,Best SQL tutorial I found that uses real Singapore data
+Supervised Learning,4,Random Forest feature importance plot was very helpful
+Unsupervised Learning,4,K-means clustering of neighborhoods made total sense
+Neural Network,3,Would appreciate more depth on deep learning architectures
+Computer Vision,4,Image preprocessing pipeline was well explained
+Stream Processing,4,Simulated MRT crowding events were a creative teaching approach
+Data Architecture,5,Star schema design for HDB transactions was crystal clear
+Deployment,4,Good coverage of Flask API deployment patterns
+Probability,3,Could use more practice problems on Bayesian statistics

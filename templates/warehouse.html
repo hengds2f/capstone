@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Data Warehouse - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🏬 Data Warehouse Design</h1>
+    <p class="breadcrumb">Home / Warehouse — OLAP, dimensions, and analytical storage</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is a Data Warehouse?</h3></div>
+    <div class="concept-body">
+        <p>A data warehouse is a centralized repository optimized for analytical queries (OLAP). Unlike operational databases (OLTP), warehouses store historical, aggregated, and denormalized data.</p>
+
+        <h4>🎯 Singapore Example</h4>
+        <p>Our SQLite database acts as a mini data warehouse for Singapore's HDB and transport data, using a star schema design.</p>
+
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Data Warehouse Architecture:
+
+┌──────────────────────────────────────────────┐
+│                  DATA MART LAYER             │
+│   v_hdb_summary  │  v_transport_summary      │
+├──────────────────────────────────────────────┤
+│              STAR SCHEMA LAYER               │
+│  fact_hdb_transactions + dim_location        │
+│  fact_transport_usage + dim_station          │
+├──────────────────────────────────────────────┤
+│               STAGING LAYER                  │
+│         raw_hdb_resale (raw data)            │
+├──────────────────────────────────────────────┤
+│              SOURCE SYSTEMS                  │
+│    data.gov.sg │ LTA DataMall │ CSV files    │
+└──────────────────────────────────────────────┘</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Slowly Changing Dimensions (SCD)</h3></div>
+    <div class="concept-body">
+        <p>When dimension data changes over time, we need strategies to handle history.</p>
+        <table class="table">
+            <tr><th>SCD Type</th><th>Approach</th><th>SG Example</th></tr>
+            <tr><td>Type 1</td><td>Overwrite old value</td><td>Update school address after relocation</td></tr>
+            <tr><td>Type 2</td><td>Add new row with dates</td><td>Track MRT station name changes over time</td></tr>
+            <tr><td>Type 3</td><td>Add column for old value</td><td>Store both old and new planning area names</td></tr>
+        </table>
+
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- SCD Type 2: Track historical changes
+CREATE TABLE dim_station_history (
+    station_id INTEGER,
+    station_name VARCHAR(100),
+    line_name VARCHAR(50),
+    effective_from DATE,
+    effective_to DATE,        -- NULL means current
+    is_current INTEGER DEFAULT 1,
+    PRIMARY KEY (station_id, effective_from)
+);
+
+-- Query: Get current station names
+SELECT * FROM dim_station_history WHERE is_current = 1;
+
+-- Query: Get station name as of a specific date
+SELECT * FROM dim_station_history
+WHERE effective_from <= '2020-01-01'
+  AND (effective_to IS NULL OR effective_to > '2020-01-01');</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Aggregate Tables & Materialized Views</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">SQL</span><pre>-- Pre-computed aggregation for dashboard performance
+CREATE TABLE agg_monthly_prices AS
+SELECT
+    l.town,
+    t.year,
+    t.month,
+    COUNT(*) as transaction_count,
+    ROUND(AVG(f.resale_price), 0) as avg_price,
+    MIN(f.resale_price) as min_price,
+    MAX(f.resale_price) as max_price,
+    ROUND(AVG(f.price_per_sqm), 2) as avg_price_sqm
+FROM fact_hdb_transactions f
+JOIN dim_location l ON f.location_id = l.location_id
+JOIN dim_time t ON f.time_id = t.time_id
+GROUP BY l.town, t.year, t.month;
+
+-- Dashboard query now hits the aggregate instead of joining 3 tables
+SELECT * FROM agg_monthly_prices WHERE town = 'BISHAN';</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Create an aggregate table for monthly transport usage by MRT line.</p>
+    <p>2. Design a SCD Type 2 table for tracking HDB block demolition and rebuilding.</p>
+    <p>3. What are the tradeoffs of pre-computing aggregates vs. querying on-the-fly?</p>
+</div>
+{% endblock %}

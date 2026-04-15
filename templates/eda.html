@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}EDA - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🔍 Exploratory Data Analysis</h1>
+    <p class="breadcrumb">Home / EDA — Discover patterns, distributions, and anomalies in Singapore data</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is EDA?</h3></div>
+    <div class="concept-body">
+        <p>Exploratory Data Analysis is the critical first step of any data science project. Before building models, you must understand your data: its shape, distributions, relationships, missing values, and outliers.</p>
+        <h4>🎯 Singapore Context</h4>
+        <p>Analyzing HDB resale prices helps buyers understand market trends, while transport usage data reveals urban mobility patterns across Singapore's planning areas.</p>
+    </div>
+</div>
+
+{% if stats %}
+<div class="card-grid">
+    <div class="summary-card">
+        <div class="number">{{ stats.get('total', 0) }}</div>
+        <div class="label">Total Transactions</div>
+    </div>
+    <div class="summary-card">
+        <div class="number">${{ "{:,.0f}".format(stats.get('avg_price', 0)) }}</div>
+        <div class="label">Average Price</div>
+    </div>
+    <div class="summary-card">
+        <div class="number">{{ stats.get('towns', 0) }}</div>
+        <div class="label">Towns</div>
+    </div>
+    <div class="summary-card">
+        <div class="number">{{ stats.get('flat_types', 0) }}</div>
+        <div class="label">Flat Types</div>
+    </div>
+</div>
+{% endif %}
+
+{% if charts.price_by_town %}
+<div class="chart-container">
+    <div id="chart-price-town"></div>
+</div>
+{% endif %}
+
+{% if charts.price_dist %}
+<div class="chart-container">
+    <div id="chart-price-dist"></div>
+</div>
+{% endif %}
+
+{% if charts.area_vs_price %}
+<div class="chart-container">
+    <div id="chart-area-price"></div>
+</div>
+{% endif %}
+
+{% if charts.correlation %}
+<div class="chart-container">
+    <div id="chart-correlation"></div>
+</div>
+{% endif %}
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📋 EDA Checklist</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
+import numpy as np
+
+df = pd.read_csv('data/hdb_resale.csv')
+
+# 1. Shape and structure
+print(f"Shape: {df.shape}")
+print(f"Columns: {list(df.columns)}")
+print(f"Dtypes:\n{df.dtypes}")
+
+# 2. Missing data analysis
+print(f"\nNull counts:\n{df.isnull().sum()}")
+print(f"Null %:\n{(df.isnull().sum() / len(df) * 100).round(2)}")
+
+# 3. Statistical summary
+print(f"\nDescribe:\n{df.describe()}")
+
+# 4. Distribution analysis
+print(f"\nUnique towns: {df['town'].nunique()}")
+print(f"Value counts:\n{df['flat_type'].value_counts()}")
+
+# 5. Correlation analysis
+numeric = df.select_dtypes(include=[np.number])
+print(f"\nCorrelation matrix:\n{numeric.corr().round(3)}")
+
+# 6. Outlier detection (IQR method)
+Q1 = df['resale_price'].quantile(0.25)
+Q3 = df['resale_price'].quantile(0.75)
+IQR = Q3 - Q1
+outliers = df[(df['resale_price'] < Q1 - 1.5*IQR) | (df['resale_price'] > Q3 + 1.5*IQR)]
+print(f"\nOutliers found: {len(outliers)}")</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Which town has the highest price variance? (suggests diverse housing stock)</p>
+    <p>2. Is there a correlation between building age and resale price?</p>
+    <p>3. Which flat type has the highest median price per square meter?</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+{% if charts.price_by_town %}renderPlotly('chart-price-town', '{{ charts.price_by_town|safe }}');{% endif %}
+{% if charts.price_dist %}renderPlotly('chart-price-dist', '{{ charts.price_dist|safe }}');{% endif %}
+{% if charts.area_vs_price %}renderPlotly('chart-area-price', '{{ charts.area_vs_price|safe }}');{% endif %}
+{% if charts.correlation %}renderPlotly('chart-correlation', '{{ charts.correlation|safe }}');{% endif %}
+</script>
+{% endblock %}

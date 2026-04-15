@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Computer Vision - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>👁️ Computer Vision</h1>
+    <p class="breadcrumb">Home / Computer Vision — Image processing and classification</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 What is Computer Vision?</h3></div>
+    <div class="concept-body">
+        <p>Computer vision enables machines to interpret and understand visual information. Applications in Singapore include traffic monitoring, crowd detection, and urban planning analysis.</p>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🖼️ Generated Sample Images</h3></div>
+    <div class="concept-body">
+        {% if images %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            {% for img in images %}
+                <div class="card">
+                    <img src="{{ img.url }}" alt="{{ img.type }}" style="width: 100%; border-radius: 6px;">
+                    <p style="text-align: center; margin-top: 8px;">{{ img.type | title }}</p>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p>Sample images will be generated when this page loads. Check that Pillow is installed.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Image Preprocessing Pipeline</h3></div>
+    <div class="concept-body">
+        {% if preprocessing %}
+        <table class="table">
+            <tr><th>Step</th><th>Input Shape</th><th>Output Shape</th><th>Description</th></tr>
+            {% for step in preprocessing.steps %}
+            <tr>
+                <td>{{ step.step }}</td>
+                <td>{{ step.input_shape }}</td>
+                <td>{{ step.output_shape }}</td>
+                <td>{{ step.description }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+
+        <div class="code-block"><span class="lang-label">Python</span><pre>from PIL import Image, ImageFilter
+import numpy as np
+
+def preprocess_pipeline(image_path):
+    """Standard CV preprocessing pipeline."""
+    img = Image.open(image_path)
+
+    # 1. Resize to consistent dimensions
+    img = img.resize((128, 128))
+
+    # 2. Convert to grayscale (if needed)
+    gray = img.convert('L')
+
+    # 3. Convert to numpy array and normalize
+    arr = np.array(gray, dtype=np.float32) / 255.0
+    # Now pixel values are 0.0-1.0 instead of 0-255
+
+    # 4. Edge detection (Sobel-like filter)
+    edges = gray.filter(ImageFilter.FIND_EDGES)
+
+    # 5. Gaussian blur (noise reduction)
+    blurred = img.filter(ImageFilter.GaussianBlur(radius=2))
+
+    return {
+        'resized': img,
+        'grayscale': gray,
+        'normalized': arr,
+        'edges': edges,
+        'blurred': blurred
+    }</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Color Histogram Analysis</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>def extract_color_features(image_path):
+    """Extract color histogram features for classification."""
+    img = Image.open(image_path).resize((128, 128))
+    arr = np.array(img)
+
+    features = {}
+    for i, channel in enumerate(['red', 'green', 'blue']):
+        channel_data = arr[:, :, i].flatten()
+        features[f'{channel}_mean'] = np.mean(channel_data)
+        features[f'{channel}_std'] = np.std(channel_data)
+        features[f'{channel}_median'] = np.median(channel_data)
+
+    # Derived features
+    features['brightness'] = np.mean(arr)
+    features['green_ratio'] = features['green_mean'] / (features['brightness'] + 1)
+
+    return features
+
+# Classify based on color features
+# Parks: high green ratio
+# HDB blocks: high gray/blue mean
+# MRT stations: distinctive color per line</pre></div>
+
+        {% if classification %}
+        <h4>Classification Results</h4>
+        <table class="table">
+            <tr><th>Image Type</th><th>Predicted Class</th><th>Confidence</th></tr>
+            {% for result in classification %}
+            <tr>
+                <td>{{ result.image_type }}</td>
+                <td>{{ result.predicted_class }}</td>
+                <td>{{ "%.1f" | format(result.confidence * 100) }}%</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Augmentation</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">Python</span><pre>from PIL import ImageEnhance, ImageOps
+
+def augment_image(img):
+    """Generate augmented versions to increase training data."""
+    augmented = []
+
+    # Horizontal flip
+    augmented.append(ImageOps.mirror(img))
+
+    # Rotation (small angle)
+    augmented.append(img.rotate(15, fillcolor=(0, 0, 0)))
+    augmented.append(img.rotate(-15, fillcolor=(0, 0, 0)))
+
+    # Brightness adjustment
+    enhancer = ImageEnhance.Brightness(img)
+    augmented.append(enhancer.enhance(0.7))  # Darker
+    augmented.append(enhancer.enhance(1.3))  # Brighter
+
+    # Contrast adjustment
+    enhancer = ImageEnhance.Contrast(img)
+    augmented.append(enhancer.enhance(0.8))
+    augmented.append(enhancer.enhance(1.2))
+
+    return augmented
+
+# From 100 images → 800 with augmentation (8x increase)
+# This helps prevent overfitting on small datasets</pre></div>
+    </div>
+</div>
+
+<div class="common-mistake">
+    <h5>⚠️ Common Mistakes</h5>
+    <ul>
+        <li><strong>Not normalizing pixel values</strong>: Raw 0-255 values cause training instability</li>
+        <li><strong>Using augmentation on test data</strong>: Only augment training data</li>
+        <li><strong>Ignoring class imbalance</strong>: If you have 1000 HDB images but only 50 park images, oversample or weight</li>
+    </ul>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Exercises</h5>
+    <p>1. Look at the generated sample images. What visual features distinguish buildings from parks?</p>
+    <p>2. Why would edge detection be useful for identifying HDB block outlines?</p>
+    <p>3. Design a feature set for classifying satellite images of Singapore into: residential, commercial, green space.</p>
+</div>
+{% endblock %}

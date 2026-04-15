@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Big Data & Engineering - SG Data Science Lab{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🏗️ Big Data & Data Engineering</h1>
+    <p class="breadcrumb">Home / Big Data — Core concepts of scalable data systems</p>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Batch vs Streaming Processing</h3></div>
+    <div class="concept-body">
+        <p>Data processing falls into two paradigms, both relevant to Singapore's data infrastructure:</p>
+        <h4>🎯 Batch Processing</h4>
+        <p>Processes large volumes of data at scheduled intervals. <strong>Singapore example:</strong> Monthly HDB resale transaction reports published by HDB. Data is collected over a month, then processed and published as a complete dataset.</p>
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Batch Processing Pipeline:
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│ HDB Data │───>│  Extract  │───>│Transform │───>│   Load   │
+│  (CSV)   │    │  Monthly  │    │  Clean   │    │  SQLite  │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘
+                  Scheduled       Pandas          Database
+                  (Cron/DAG)      Processing      Storage</pre></div>
+
+        <h4>🎯 Stream Processing</h4>
+        <p>Processes data in real-time as it arrives. <strong>Singapore example:</strong> MRT crowding updates every few minutes from LTA, weather updates from NEA, or ERP gantry readings in real-time.</p>
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Stream Processing Pipeline:
+┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
+│MRT Crowd │───>│  Ingest   │───>│ Window   │───>│  Alert   │
+│  Events  │    │  Events   │    │ Aggregate│    │Dashboard │
+└──────────┘    └──────────┘    └──────────┘    └──────────┘
+                  Continuous     5-min windows   Real-time</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Data Lake vs Data Warehouse</h3></div>
+    <div class="concept-body">
+        <table class="table">
+            <tr><th>Aspect</th><th>Data Lake</th><th>Data Warehouse</th></tr>
+            <tr><td>Schema</td><td>Schema-on-read</td><td>Schema-on-write</td></tr>
+            <tr><td>Data format</td><td>Raw (JSON, CSV, Parquet)</td><td>Structured (tables)</td></tr>
+            <tr><td>Users</td><td>Data scientists, engineers</td><td>Analysts, business users</td></tr>
+            <tr><td>Processing</td><td>ELT (Extract-Load-Transform)</td><td>ETL (Extract-Transform-Load)</td></tr>
+            <tr><td>SG example</td><td>Raw data.gov.sg API responses</td><td>Star schema with HDB facts/dims</td></tr>
+            <tr><td>Cost</td><td>Lower (cheap storage)</td><td>Higher (compute + storage)</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 ETL vs ELT</h3></div>
+    <div class="concept-body">
+        <div class="two-col">
+            <div>
+                <h4>ETL (Traditional)</h4>
+                <div class="code-block"><pre>1. Extract from data.gov.sg API
+2. Transform in Python (clean, validate)
+3. Load into dimensional tables
+
+# Used when: Target system has limited
+# compute (e.g., small SQLite DB)</pre></div>
+            </div>
+            <div>
+                <h4>ELT (Modern)</h4>
+                <div class="code-block"><pre>1. Extract from data.gov.sg API
+2. Load raw data into data lake
+3. Transform using SQL in warehouse
+
+# Used when: Target system has powerful
+# compute (e.g., BigQuery, Snowflake)</pre></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Key Engineering Concepts</h3></div>
+    <div class="concept-body">
+        <h4>Idempotency</h4>
+        <p>Running the same pipeline multiple times produces the same result. <strong>SG example:</strong> Re-ingesting January 2024 HDB data should not create duplicate rows.</p>
+        <div class="code-block"><span class="lang-label">Python</span><pre># Idempotent ingestion pattern
+def ingest_hdb_month(month):
+    # Delete existing data for this month first
+    execute_db("DELETE FROM raw_hdb_resale WHERE month = ?", (month,))
+    # Then insert fresh data
+    df = fetch_hdb_data(month)
+    df.to_sql('raw_hdb_resale', conn, if_exists='append', index=False)</pre></div>
+
+        <h4>Partitioning</h4>
+        <p>Splitting large datasets into smaller chunks for parallel processing. <strong>SG example:</strong> Partition HDB data by town or by year-month for faster queries.</p>
+
+        <h4>Event-Driven Architecture</h4>
+        <p>Systems react to events rather than polling. <strong>SG example:</strong> When a new MRT crowding update is published, trigger alerts and dashboard refreshes.</p>
+
+        <h4>Data Lineage</h4>
+        <p>Tracking where data came from and how it was transformed. <strong>SG example:</strong> "This average HDB price was derived from raw_hdb_resale → cleaned → aggregated by town."</p>
+
+        <h4>Retries and Monitoring</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>import time
+
+def with_retry(func, max_retries=3, delay=2):
+    """Retry function with exponential backoff."""
+    for attempt in range(max_retries):
+        try:
+            return func()
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(delay * (2 ** attempt))
+            print(f"Retry {attempt + 1}/{max_retries}: {e}")</pre></div>
+    </div>
+</div>
+
+<div class="exercise-box">
+    <h5>🧪 Try It Yourself</h5>
+    <p>1. Design an ETL pipeline for Singapore weather data from NEA.</p>
+    <p>2. How would you make the HDB ingestion pipeline idempotent?</p>
+    <p>3. Draw a data lineage diagram from raw CSV to average price per town.</p>
+</div>
+{% endblock %}
