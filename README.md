@@ -1,3 +1,13 @@
+---
+title: Singapore Data Science Lab
+emoji: 📊
+colorFrom: red
+colorTo: blue
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
 # Singapore Data Science Lab 🇸🇬
 
 A comprehensive, interactive web application for learning data science using real-world Singapore public data. Built with Flask, SQLite, and scikit-learn.
