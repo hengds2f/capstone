@@ -60,7 +60,28 @@ def ingest_from_url(url, table_name, save_dir, if_exists='append'):
     elif fmt == 'excel':
         df = pd.read_excel(filepath)
     else:
-        df = pd.read_csv(filepath)
+        # Try multiple CSV parsing strategies for robustness
+        df = None
+        # Strategy 1: standard parse
+        try:
+            df = pd.read_csv(filepath)
+        except Exception:
+            pass
+        # Strategy 2: skip bad lines
+        if df is None or df.empty:
+            try:
+                df = pd.read_csv(filepath, on_bad_lines='skip')
+            except Exception:
+                pass
+        # Strategy 3: auto-detect separator
+        if df is None or df.empty:
+            try:
+                df = pd.read_csv(filepath, sep=None, engine='python', on_bad_lines='skip')
+            except Exception:
+                pass
+        # Strategy 4: treat as single-column text
+        if df is None or df.empty:
+            df = pd.read_csv(filepath, sep='\x00', header=None, names=['raw_text'], on_bad_lines='skip')
 
     if df.empty:
         raise ValueError("Downloaded file contains no data")
