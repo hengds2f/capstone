@@ -118,7 +118,7 @@ def ingest_hdb_data(csv_path):
             try:
                 conn.execute(
                     "INSERT OR IGNORE INTO dim_location (town, flat_type, block, street_name, storey_range, floor_area_sqm, planning_area, region) VALUES (?,?,?,?,?,?,?,?)",
-                    (row['town'], row['flat_type'], row['block'], row['street_name'], row['storey_range'], row['floor_area_sqm'], row['town'], 'Singapore')
+                    (row['town'], row['flat_type'], row['block'], row['street_name'], row['storey_range'], row['floor_area_sqm'], row['town'], 'Region')
                 )
             except Exception:
                 pass
@@ -275,11 +275,11 @@ def ingest_feedback_data(csv_path):
 
 
 def mock_datagov_api(dataset_name):
-    """Simulate data.gov.sg API response for educational purposes."""
+    """Simulate a public data API response for educational purposes."""
     mock_responses = {
         'hdb-resale': {
             'api_url': 'https://data.gov.sg/api/action/datastore_search?resource_id=f1765b54-a209-4718-8d38-a39237f502b3',
-            'note': 'In production, call requests.get(api_url) and parse response JSON.',
+            'note': 'In production, call requests.get(api_url) and parse response JSON. Works with any REST API.',
             'sample_response': {
                 'success': True,
                 'result': {
@@ -290,17 +290,18 @@ def mock_datagov_api(dataset_name):
                 }
             }
         },
-        'transport': {
-            'api_url': 'https://datamall2.mytransport.sg/ltaodataservice/PassengerVolume',
-            'note': 'Requires API key from LTA DataMall. Register at https://datamall.lta.gov.sg/',
+        'generic': {
+            'api_url': 'https://api.example.com/v1/data?format=json&limit=100',
+            'note': 'Replace with any public REST API. Use your own API keys when required.',
             'sample_response': {
-                'value': [
-                    {'YEAR_MONTH': '202401', 'PT_CODE': 'NS1', 'TOTAL_TAP_IN_VOLUME': 85000}
-                ]
+                'data': [
+                    {'id': 1, 'name': 'Sample Record', 'value': 42.5}
+                ],
+                'total': 1
             }
         }
     }
-    return mock_responses.get(dataset_name, {'error': 'Unknown dataset'})
+    return mock_responses.get(dataset_name, mock_responses.get('generic'))
 
 
 def validate_dataframe(df, expected_columns, table_name):

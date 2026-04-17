@@ -67,10 +67,10 @@ class TestAPIEndpoints:
     def test_sql_blocks_write(self, client):
         """SQL endpoint must block write operations."""
         dangerous_queries = [
-            'DROP TABLE raw_hdb_resale',
-            'DELETE FROM raw_hdb_resale',
-            'INSERT INTO raw_hdb_resale VALUES (1)',
-            'UPDATE raw_hdb_resale SET town="X"',
+            'DROP TABLE test_table',
+            'DELETE FROM test_table',
+            'INSERT INTO test_table VALUES (1)',
+            'UPDATE test_table SET col="X"',
         ]
         for q in dangerous_queries:
             response = client.post('/api/sql/execute', json={'query': q})

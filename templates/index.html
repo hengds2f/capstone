@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Home - SG Data Science Lab{% endblock %}
+{% block title %}Home - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>🇸🇬 Singapore Data Science Lab</h1>
-    <p class="breadcrumb">A complete data science learning platform using real Singapore public data</p>
+    <h1>📊 Data Science Lab</h1>
+    <p class="breadcrumb">A complete data science learning platform — upload any dataset and explore all modules</p>
 </div>
 
 <div class="card-grid">
@@ -28,7 +28,7 @@
 
 {% if stats.values()|sum == 0 %}
 <div class="alert alert-warning">
-    <strong>Getting Started:</strong> No data loaded yet. Visit the <a href="/ingestion" style="color: var(--warning);">Data Ingestion</a> page to load the Singapore datasets, or click below to run the full pipeline.
+    <strong>Getting Started:</strong> No data loaded yet. Visit the <a href="/ingestion" style="color: var(--warning);">Data Ingestion</a> page to load sample datasets or upload your own, or click below to run the full pipeline.
 </div>
 <div style="margin-bottom: 24px;">
     <button class="btn btn-primary" onclick="runPipeline()">▶ Run Full Data Pipeline</button>
@@ -101,11 +101,11 @@ async function runPipeline() {
     <div class="concept-body">
         <p>This platform covers the full data science lifecycle, organized as a curriculum:</p>
         <ol style="padding-left: 20px;">
-            <li><strong>Data Acquisition:</strong> Ingestion, scraping, API calls → Load Singapore open datasets</li>
-            <li><strong>Storage & Schema:</strong> SQL, database design, data warehouse → Star schema with HDB data</li>
+            <li><strong>Data Acquisition:</strong> Ingestion, scraping, API calls → Load sample datasets</li>
+            <li><strong>Storage & Schema:</strong> SQL, database design, data warehouse → Star schema design</li>
             <li><strong>Processing:</strong> Pandas, NumPy, out-of-core, distributed → Clean and transform data</li>
-            <li><strong>Analysis:</strong> EDA, statistics, visualization → Explore Singapore housing and transport trends</li>
-            <li><strong>Machine Learning:</strong> Supervised, unsupervised, time series → Predict HDB prices, cluster neighborhoods</li>
+            <li><strong>Analysis:</strong> EDA, statistics, visualization → Explore trends and distributions</li>
+            <li><strong>Machine Learning:</strong> Supervised, unsupervised, time series → Predict Prices, cluster neighborhoods</li>
             <li><strong>Deep Learning & AI:</strong> Neural networks, CV, NLP → Classify images and text</li>
             <li><strong>Engineering:</strong> Pipelines, streaming, orchestration → Build production-grade data flows</li>
             <li><strong>Deployment:</strong> Flask APIs, testing, monitoring → Serve models and dashboards</li>

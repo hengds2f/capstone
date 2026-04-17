@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Computer Vision - SG Data Science Lab{% endblock %}
+{% block title %}Computer Vision - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -10,7 +10,7 @@
 <div class="concept-section">
     <div class="concept-header"><h3>📖 What is Computer Vision?</h3></div>
     <div class="concept-body">
-        <p>Computer vision enables machines to interpret and understand visual information. Applications in Singapore include traffic monitoring, crowd detection, and urban planning analysis.</p>
+        <p>Computer vision enables machines to interpret and understand visual information. Applications include traffic monitoring, crowd detection, and urban planning analysis.</p>
     </div>
 </div>
 
@@ -105,20 +105,17 @@ def preprocess_pipeline(image_path):
 
 # Classify based on color features
 # Parks: high green ratio
-# HDB blocks: high gray/blue mean
-# MRT stations: distinctive color per line</pre></div>
+# Buildings: high gray/blue mean
+# transit stations: distinctive color per line</pre></div>
 
         {% if classification %}
         <h4>Classification Results</h4>
         <table class="table">
-            <tr><th>Image Type</th><th>Predicted Class</th><th>Confidence</th></tr>
-            {% for result in classification %}
+            <tr><th>Predicted Class</th><th>Confidence</th></tr>
             <tr>
-                <td>{{ result.image_type }}</td>
-                <td>{{ result.predicted_class }}</td>
-                <td>{{ "%.1f" | format(result.confidence * 100) }}%</td>
+                <td>{{ classification.prediction }}</td>
+                <td>{{ "%.1f" | format(classification.confidence * 100) }}%</td>
             </tr>
-            {% endfor %}
         </table>
         {% endif %}
     </div>
@@ -162,14 +159,14 @@ def augment_image(img):
     <ul>
         <li><strong>Not normalizing pixel values</strong>: Raw 0-255 values cause training instability</li>
         <li><strong>Using augmentation on test data</strong>: Only augment training data</li>
-        <li><strong>Ignoring class imbalance</strong>: If you have 1000 HDB images but only 50 park images, oversample or weight</li>
+        <li><strong>Ignoring class imbalance</strong>: If you have 1000 building images but only 50 park images, oversample or weight</li>
     </ul>
 </div>
 
 <div class="exercise-box">
     <h5>🧪 Exercises</h5>
     <p>1. Look at the generated sample images. What visual features distinguish buildings from parks?</p>
-    <p>2. Why would edge detection be useful for identifying HDB block outlines?</p>
-    <p>3. Design a feature set for classifying satellite images of Singapore into: residential, commercial, green space.</p>
+    <p>2. Why would edge detection be useful for identifying building outlines?</p>
+    <p>3. Design a feature set for classifying satellite images into: residential, commercial, green space.</p>
 </div>
 {% endblock %}

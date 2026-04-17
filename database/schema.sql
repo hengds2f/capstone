@@ -1,4 +1,4 @@
--- Singapore Data Science Lab - Database Schema
+-- Data Science Lab - Database Schema
 -- Designed for educational purposes: normalized star-schema hybrid
 
 PRAGMA journal_mode=WAL;

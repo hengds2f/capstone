@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Stream Processing - SG Data Science Lab{% endblock %}
+{% block title %}Stream Processing - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -15,7 +15,7 @@
             <tr><td>Latency</td><td>Minutes to hours</td><td>Milliseconds to seconds</td></tr>
             <tr><td>Data</td><td>Bounded dataset</td><td>Unbounded event stream</td></tr>
             <tr><td>Processing</td><td>Full dataset at once</td><td>Event-by-event or micro-batch</td></tr>
-            <tr><td>SG Example</td><td>Monthly HDB reports</td><td>Real-time MRT crowding alerts</td></tr>
+            <tr><td>Example</td><td>Monthly housing reports</td><td>Real-time transit crowding alerts</td></tr>
         </table>
     </div>
 </div>
@@ -23,7 +23,7 @@
 <div class="concept-section">
     <div class="concept-header"><h3>🚀 Live Event Simulation</h3></div>
     <div class="concept-body">
-        <p>Generate and process simulated Singapore transport and housing events in real time.</p>
+        <p>Generate and process simulated transport and housing events in real time.</p>
 
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
             <button class="btn" onclick="generateEvents()">📡 Generate Events</button>
@@ -45,7 +45,7 @@
 <div class="concept-section">
     <div class="concept-header"><h3>📖 Windowing Strategies</h3></div>
     <div class="concept-body">
-        <div class="code-block"><span class="lang-label">Concept</span><pre>Time-based Windows for MRT Crowding Data:
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Time-based Windows for Transit Crowding Data:
 
 Tumbling Window (fixed, non-overlapping):
 |---5min---|---5min---|---5min---|
@@ -77,11 +77,11 @@ def tumbling_window(events, window_size_seconds=300):
         windows[window_start].append(event)
     return dict(windows)
 
-# Process MRT crowding events
+# Process transit crowding events
 events = [
-    {"station": "Bishan", "crowd_level": 0.8, "timestamp": "2024-01-15T08:01:00"},
-    {"station": "Bishan", "crowd_level": 0.9, "timestamp": "2024-01-15T08:03:00"},
-    {"station": "Orchard", "crowd_level": 0.7, "timestamp": "2024-01-15T08:02:00"},
+    {"station": "Downtown", "crowd_level": 0.8, "timestamp": "2024-01-15T08:01:00"},
+    {"station": "Downtown", "crowd_level": 0.9, "timestamp": "2024-01-15T08:03:00"},
+    {"station": "Central", "crowd_level": 0.7, "timestamp": "2024-01-15T08:02:00"},
 ]
 
 windows = tumbling_window(events)
@@ -122,7 +122,7 @@ class StreamAnomalyDetector:
                     return True  # Anomaly detected!
         return False
 
-# Usage: Monitor MRT crowding
+# Usage: Monitor transit crowding
 detector = StreamAnomalyDetector(threshold=2.5)
 for event in mrt_events:
     is_anomaly = detector.process(event['crowd_level'], event['station'])

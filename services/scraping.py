@@ -10,18 +10,19 @@ from bs4 import BeautifulSoup
 from models.database import get_connection, execute_db
 from config import Config
 
-# Domains that are safe to scrape for educational purposes
+# Common data source domains
 ALLOWED_DOMAINS = [
     'data.gov.sg', 'tablesgenerator.com', 'en.wikipedia.org',
     'www.singstat.gov.sg', 'www.hdb.gov.sg', 'datamall.lta.gov.sg',
     'raw.githubusercontent.com', 'github.com', 'kaggle.com',
     'www.kaggle.com', 'archive.ics.uci.edu', 'people.sc.fsu.edu',
     'ourworldindata.org', 'www.worldometers.info',
+    'data.worldbank.org', 'api.worldbank.org', 'data.un.org',
 ]
 
 REQUEST_TIMEOUT = 15
 MAX_TABLES = 20
-USER_AGENT = 'SG-DataScience-Lab/1.0 (Educational Purpose)'
+USER_AGENT = 'DataScience-Lab/1.0 (Educational Purpose)'
 
 
 def _is_domain_allowed(url):

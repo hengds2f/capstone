@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Web Scraping - SG Data Science Lab{% endblock %}
+{% block title %}Web Scraping - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -14,11 +14,11 @@
 
         <h4>🎯 Method Comparison</h4>
         <table class="table">
-            <tr><th>Method</th><th>Tool</th><th>Best For</th><th>SG Example</th></tr>
-            <tr><td>REST API</td><td>requests</td><td>Structured data from APIs</td><td>data.gov.sg API</td></tr>
-            <tr><td>HTML Scraping</td><td>BeautifulSoup</td><td>Static web pages</td><td>School info from MOE website</td></tr>
-            <tr><td>Table Extraction</td><td>pandas.read_html</td><td>HTML tables</td><td>Wikipedia Singapore data</td></tr>
-            <tr><td>Dynamic Pages</td><td>Selenium</td><td>JavaScript-rendered content</td><td>PropertyGuru listings</td></tr>
+            <tr><th>Method</th><th>Tool</th><th>Best For</th><th>Example</th></tr>
+            <tr><td>REST API</td><td>requests</td><td>Structured data from APIs</td><td>open data portal API</td></tr>
+            <tr><td>HTML Scraping</td><td>BeautifulSoup</td><td>Static web pages</td><td>School info from education department website</td></tr>
+            <tr><td>Table Extraction</td><td>pandas.read_html</td><td>HTML tables</td><td>Wikipedia data</td></tr>
+            <tr><td>Dynamic Pages</td><td>Selenium</td><td>JavaScript-rendered content</td><td>real estate listings</td></tr>
         </table>
     </div>
 </div>
@@ -29,11 +29,11 @@
         <div class="code-block"><span class="lang-label">Python</span><pre>import requests
 import pandas as pd
 
-# Example: data.gov.sg API call
-# Note: This is the real API pattern — may require registration
-url = "https://data.gov.sg/api/action/datastore_search"
+# Example: REST API data extraction
+# Note: Replace with your actual API endpoint
+url = "https://api.example.com/v1/data"
 params = {
-    "resource_id": "f1765b54-a209-4718-8d38-a39237f502b3",  # HDB Resale
+    "dataset": "housing_prices",
     "limit": 100
 }
 
@@ -46,10 +46,10 @@ if response.status_code == 200:
 else:
     print(f"Error: {response.status_code}")
 
-# LTA DataMall API (requires API key)
+# transit data APIs API (requires API key)
 headers = {"AccountKey": "YOUR_API_KEY", "accept": "application/json"}
-lta_url = "http://datamall2.mytransport.sg/ltaodataservice/PassengerVolume"
-# response = requests.get(lta_url, headers=headers)</pre></div>
+transit_url = "https://api.example.com/v1/transit/passenger-volume"
+# response = requests.get(transit_url, headers=headers)</pre></div>
     </div>
 </div>
 
@@ -60,7 +60,7 @@ lta_url = "http://datamall2.mytransport.sg/ltaodataservice/PassengerVolume"
 import requests
 
 # Example: Scraping public information (educational purpose)
-url = "https://en.wikipedia.org/wiki/List_of_MRT_stations_in_Singapore"
+url = "https://en.wikipedia.org/wiki/List_of_metro_systems"
 
 response = requests.get(url, timeout=30)
 soup = BeautifulSoup(response.content, 'html.parser')
@@ -88,7 +88,7 @@ time.sleep(1)  # Be polite — wait between requests</pre></div>
         <ul>
             <li>✅ Check <code>robots.txt</code> before scraping any website</li>
             <li>✅ Respect rate limits — add delays between requests</li>
-            <li>✅ Use official APIs when available (data.gov.sg, LTA DataMall)</li>
+            <li>✅ Use official APIs when available (open data portals, transit data APIs)</li>
             <li>✅ Cache responses to avoid repeated requests</li>
             <li>✅ Only scrape publicly available information</li>
             <li>❌ Don't scrape personal data without consent</li>
@@ -100,8 +100,8 @@ time.sleep(1)  # Be polite — wait between requests</pre></div>
 
 <div class="exercise-box">
     <h5>🧪 Try It Yourself</h5>
-    <p>1. Use <code>pandas.read_html()</code> to extract a table from Wikipedia about Singapore demographics.</p>
-    <p>2. Write a function that calls the data.gov.sg API and handles pagination.</p>
+    <p>1. Use <code>pandas.read_html()</code> to extract a table from Wikipedia about the data demographics.</p>
+    <p>2. Write a function that calls the open data portal API and handles pagination.</p>
     <p>3. Build a caching layer that stores API responses locally to avoid repeat calls.</p>
 </div>
 {% endblock %}

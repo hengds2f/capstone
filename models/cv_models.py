@@ -37,13 +37,13 @@ def generate_sample_image(image_type='building', size=(200, 200)):
         # Path
         draw.line([(0, 160), (200, 140)], fill=(210, 180, 140), width=8)
 
-    elif image_type == 'mrt':
-        # MRT station
+    elif image_type == 'street':
+        # Street/station scene
         draw.rectangle([20, 100, 180, 160], fill=(200, 200, 200), outline=(100, 100, 100))
         draw.rectangle([20, 80, 180, 100], fill=(200, 50, 50))
         # Platform
         draw.rectangle([20, 160, 180, 180], fill=(150, 150, 150))
-        # Track lines
+        # Road lines
         draw.line([(0, 175), (200, 175)], fill=(80, 80, 80), width=3)
         draw.line([(0, 178), (200, 178)], fill=(80, 80, 80), width=3)
 
@@ -194,7 +194,7 @@ def simple_image_classifier(img):
 def neural_network_pseudocode():
     """Return pseudo-implementation of a CNN for educational purposes."""
     return {
-        'title': 'Convolutional Neural Network for Singapore Scene Classification',
+        'title': 'Convolutional Neural Network for Scene Classification',
         'framework': 'TensorFlow/Keras (pseudo-code)',
         'architecture': [
             {'layer': 'Input', 'shape': '(64, 64, 3)', 'params': 0},
@@ -209,7 +209,7 @@ def neural_network_pseudocode():
             {'layer': 'Dense', 'units': 4, 'activation': 'softmax'}
         ],
         'code': """
-# Pseudo-code: CNN for Singapore scene classification
+# Pseudo-code: CNN for scene classification
 import tensorflow as tf
 from tensorflow import keras
 
@@ -223,7 +223,7 @@ model = keras.Sequential([
     keras.layers.GlobalAveragePooling2D(),
     keras.layers.Dense(64, activation='relu'),
     keras.layers.Dropout(0.5),
-    keras.layers.Dense(4, activation='softmax')  # building, park, mrt, urban
+    keras.layers.Dense(4, activation='softmax')  # building, park, street, urban
 ])
 
 model.compile(
@@ -236,12 +236,12 @@ model.compile(
 # model.fit(X_train, y_train, epochs=20, validation_split=0.2, batch_size=32)
 
 # Notes:
-# - Collect labeled images of Singapore scenes (HDB blocks, parks, MRT stations)
+# - Collect labeled images of scenes (buildings, parks, streets, urban areas)
 # - Augment data with rotation, flipping, brightness adjustments
 # - Use transfer learning (ResNet50, MobileNetV2) for better accuracy
 # - Export model with model.save() for Flask deployment
 """,
-        'classes': ['building', 'park', 'mrt_station', 'urban_scene'],
+        'classes': ['building', 'park', 'street', 'urban_scene'],
         'training_tips': [
             'Use data augmentation to increase training set size',
             'Transfer learning from ImageNet pre-trained models works well for small datasets',

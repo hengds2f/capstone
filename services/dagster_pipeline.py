@@ -548,7 +548,7 @@ class AssetGraph:
 
 
 # ============================================================
-# Pre-built Dagster jobs for Singapore datasets
+# Pre-built Dagster jobs for datasets
 # ============================================================
 
 def _make_csv_extract_op(csv_name, table_name):
@@ -737,11 +737,11 @@ def build_dagster_energy_job():
 
 
 # ============================================================
-# Software-Defined Assets for Singapore Data
+# Software-Defined Assets for Data
 # ============================================================
 
 def build_sg_asset_graph():
-    """Build a Dagster-style asset graph for all Singapore datasets."""
+    """Build a Dagster-style asset graph for all datasets."""
     ag = AssetGraph('sg_data_assets')
 
     # ---- Raw assets (no upstream deps) ----

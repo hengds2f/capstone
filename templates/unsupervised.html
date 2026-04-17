@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Unsupervised Learning - SG Data Science Lab{% endblock %}
+{% block title %}Unsupervised Learning - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -12,10 +12,10 @@
     <div class="concept-body">
         <p>Unsupervised learning finds hidden patterns in data without labeled outputs. The model discovers structure on its own.</p>
         <table class="table">
-            <tr><th>Task</th><th>Algorithm</th><th>SG Example</th></tr>
-            <tr><td>Clustering</td><td>K-Means, DBSCAN</td><td>Group HDB towns by price & size similarity</td></tr>
-            <tr><td>Dimensionality Reduction</td><td>PCA, t-SNE</td><td>Visualize 10-feature HDB data in 2D</td></tr>
-            <tr><td>Anomaly Detection</td><td>Isolation Forest</td><td>Detect unusual HDB transactions</td></tr>
+            <tr><th>Task</th><th>Algorithm</th><th>Example</th></tr>
+            <tr><td>Clustering</td><td>K-Means, DBSCAN</td><td>Group neighborhoods by price & size similarity</td></tr>
+            <tr><td>Dimensionality Reduction</td><td>PCA, t-SNE</td><td>Visualize 10-feature housing data in 2D</td></tr>
+            <tr><td>Anomaly Detection</td><td>Isolation Forest</td><td>Detect unusual housing transactions</td></tr>
         </table>
     </div>
 </div>
@@ -23,7 +23,7 @@
 <div class="concept-section">
     <div class="concept-header"><h3>🚀 Run K-Means Clustering</h3></div>
     <div class="concept-body">
-        <p>Cluster Singapore neighborhoods by housing characteristics (average price, area, transaction volume).</p>
+        <p>Cluster neighborhoods by housing characteristics (average price, area, transaction volume).</p>
         <button class="btn" onclick="trainModel('kmeans')">🎯 Run K-Means (3 clusters)</button>
         <div id="model-output" class="output-box" style="margin-top: 15px; min-height: 100px;"></div>
     </div>
@@ -38,10 +38,10 @@ import pandas as pd
 
 # Prepare neighborhood features
 neighborhood_data = df.groupby('town').agg(
-    avg_price=('resale_price', 'mean'),
-    avg_area=('floor_area_sqm', 'mean'),
-    transaction_count=('resale_price', 'count'),
-    price_std=('resale_price', 'std')
+    avg_price=('price', 'mean'),
+    avg_area=('area', 'mean'),
+    transaction_count=('price', 'count'),
+    price_std=('price', 'std')
 ).reset_index()
 
 # Always scale features before clustering!
@@ -107,7 +107,7 @@ for cluster_id in range(3):
         text=neighborhood_data[mask]['town'],
         name=f'Cluster {cluster_id}'
     ))
-fig.update_layout(title='HDB Neighborhoods — PCA Visualization')
+fig.update_layout(title='Neighborhoods — PCA Visualization')
 fig.show()</pre></div>
     </div>
 </div>

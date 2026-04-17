@@ -53,7 +53,7 @@ class TestModelTraining:
                     json={'model_type': 'linear_regression'})
         # Then predict
         response = client.post('/api/model/predict', json={
-            'town': 'BISHAN',
+            'location': 'Downtown',
             'flat_type': '4 ROOM',
             'floor_area_sqm': 95,
             'storey_mid': 10,
@@ -78,7 +78,7 @@ class TestNLP:
     def test_text_classification(self, client):
         response = client.post('/api/model/train', json={
             'model_type': 'text_classifier',
-            'text': 'The MRT was very crowded today'
+            'text': 'The metro was very crowded today'
         })
         # This may or may not be a supported endpoint — check gracefully
         assert response.status_code in [200, 400]

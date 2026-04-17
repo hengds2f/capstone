@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Probability & Statistics - SG Data Science Lab{% endblock %}
+{% block title %}Probability & Statistics - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -13,7 +13,7 @@
         <div class="code-block"><span class="lang-label">Python</span><pre>import numpy as np
 import pandas as pd
 
-# HDB resale prices for Bishan
+# property prices for Downtown
 prices = np.array([480000, 520000, 510000, 650000, 490000, 530000, 1200000, 500000])
 
 # Measures of Central Tendency
@@ -40,22 +40,22 @@ print(f"Skewness: {price_skew:.2f} (right-skewed = expensive outliers)")</pre></
     <div class="concept-header"><h3>📖 Probability Distributions</h3></div>
     <div class="concept-body">
         <table class="table">
-            <tr><th>Distribution</th><th>Type</th><th>SG Example</th></tr>
+            <tr><th>Distribution</th><th>Type</th><th>Example</th></tr>
             <tr><td>Normal</td><td>Continuous</td><td>Student test scores follow a bell curve</td></tr>
-            <tr><td>Poisson</td><td>Discrete</td><td>Number of MRT breakdowns per month</td></tr>
+            <tr><td>Poisson</td><td>Discrete</td><td>Number of transit delays per month</td></tr>
             <tr><td>Exponential</td><td>Continuous</td><td>Time between bus arrivals</td></tr>
-            <tr><td>Binomial</td><td>Discrete</td><td>Probability of k HDB ballots succeeding out of n</td></tr>
-            <tr><td>Log-Normal</td><td>Continuous</td><td>HDB resale prices (right-skewed)</td></tr>
+            <tr><td>Binomial</td><td>Discrete</td><td>Probability of k housing ballots succeeding out of n</td></tr>
+            <tr><td>Log-Normal</td><td>Continuous</td><td>property prices (right-skewed)</td></tr>
         </table>
 
         <div class="code-block"><span class="lang-label">Python</span><pre>from scipy import stats
 
-# Poisson: MRT incidents per month (avg = 2.5)
+# Poisson: transit incidents per month (avg = 2.5)
 poisson_dist = stats.poisson(mu=2.5)
 print(f"P(0 incidents) = {poisson_dist.pmf(0):.4f}")
 print(f"P(≤3 incidents) = {poisson_dist.cdf(3):.4f}")
 
-# Normal: HDB prices ~ N(500000, 80000²)
+# Normal: housing prices ~ N(500000, 80000²)
 normal_dist = stats.norm(loc=500000, scale=80000)
 print(f"P(price < 400000) = {normal_dist.cdf(400000):.4f}")
 print(f"P(400000 < price < 600000) = {normal_dist.cdf(600000) - normal_dist.cdf(400000):.4f}")
@@ -69,23 +69,23 @@ print(f"Sample mean distribution: μ={np.mean(sample_means):,.0f}, σ={np.std(sa
 <div class="concept-section">
     <div class="concept-header"><h3>📖 Hypothesis Testing</h3></div>
     <div class="concept-body">
-        <div class="code-block"><span class="lang-label">Python</span><pre># Question: Are Bishan HDB prices significantly higher than Tampines?
-bishan_prices = [520000, 530000, 540000, 550000, 560000, 580000]
-tampines_prices = [420000, 430000, 440000, 450000, 460000, 470000]
+        <div class="code-block"><span class="lang-label">Python</span><pre># Question: Are Downtown housing prices significantly higher than Midtown?
+downtown_prices = [520000, 530000, 540000, 550000, 560000, 580000]
+midtown_prices = [420000, 430000, 440000, 450000, 460000, 470000]
 
-# H₀: μ_bishan = μ_tampines (no difference)
-# H₁: μ_bishan > μ_tampines (Bishan is higher)
+# H₀: μ_downtown = μ_midtown (no difference)
+# H₁: μ_downtown > μ_midtown (Downtown is higher)
 
-t_stat, p_value = stats.ttest_ind(bishan_prices, tampines_prices)
+t_stat, p_value = stats.ttest_ind(downtown_prices, midtown_prices)
 alpha = 0.05
 
 print(f"t-statistic: {t_stat:.4f}")
 print(f"p-value: {p_value:.6f}")
 print(f"Reject H₀? {'Yes' if p_value < alpha else 'No'} (α={alpha})")
-# Result: Yes — Bishan prices are statistically significantly higher
+# Result: Yes — Downtown prices are statistically significantly higher
 
 # Chi-squared test: Is flat type distribution independent of town?
-# contingency_table = pd.crosstab(df['town'], df['flat_type'])
+# contingency_table = pd.crosstab(df['town'], df['property_type'])
 # chi2, p, dof, expected = stats.chi2_contingency(contingency_table)</pre></div>
     </div>
 </div>
@@ -96,7 +96,7 @@ print(f"Reject H₀? {'Yes' if p_value < alpha else 'No'} (α={alpha})")
         <div class="code-block"><span class="lang-label">Python</span><pre># Pearson correlation: linear relationship between two variables
 # Spearman: monotonic relationship (robust to outliers)
 
-# floor_area_sqm vs resale_price
+# area vs price
 r_pearson, p_val = stats.pearsonr(floor_areas, prices)
 r_spearman, p_val = stats.spearmanr(floor_areas, prices)
 
@@ -104,7 +104,7 @@ print(f"Pearson r = {r_pearson:.3f}")     # e.g., 0.85 — strong positive
 print(f"Spearman ρ = {r_spearman:.3f}")
 
 # ⚠️ Correlation ≠ Causation
-# Observation: Ice cream sales ↑ and dengue cases ↑ in Singapore
+# Observation: Ice cream sales ↑ and illness cases ↑ in the area
 # Correlation: r = 0.7
 # Causation? NO — both are caused by hot weather (confounding variable)</pre></div>
     </div>
@@ -113,7 +113,7 @@ print(f"Spearman ρ = {r_spearman:.3f}")
 <div class="common-mistake">
     <h5>⚠️ Common Mistakes</h5>
     <ul>
-        <li><strong>Using mean for skewed data</strong>: HDB prices are right-skewed — use median instead</li>
+        <li><strong>Using mean for skewed data</strong>: housing prices are right-skewed — use median instead</li>
         <li><strong>p-value ≠ probability H₀ is true</strong>: It's P(data | H₀), not P(H₀ | data)</li>
         <li><strong>Multiple testing problem</strong>: Testing 20 hypotheses at α=0.05 ⇒ expect 1 false positive</li>
     </ul>
@@ -123,6 +123,6 @@ print(f"Spearman ρ = {r_spearman:.3f}")
     <h5>🧪 Exercises</h5>
     <p>1. Compute mean, median, and std for resale prices by flat type. Which metric is most useful?</p>
     <p>2. Test whether 3-ROOM and 4-ROOM flat prices have equal variance (Levene's test).</p>
-    <p>3. What distribution would you use to model the number of BTO applications per launch?</p>
+    <p>3. What distribution would you use to model the number of housing applications per launch?</p>
 </div>
 {% endblock %}

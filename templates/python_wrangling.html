@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Python Wrangling - SG Data Science Lab{% endblock %}
+{% block title %}Python Wrangling - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -12,10 +12,10 @@
     <div class="concept-body">
         <p>NumPy provides fast, vectorized operations on arrays. It's the backbone of scientific computing in Python, powering Pandas, scikit-learn, and TensorFlow under the hood.</p>
 
-        <h4>🎯 Singapore Example: HDB Price Analysis with NumPy</h4>
+        <h4>🎯 the region Example: housing Price Analysis with NumPy</h4>
         <div class="code-block"><span class="lang-label">Python</span><pre>import numpy as np
 
-# HDB resale prices for different towns
+# property prices for different towns
 prices = np.array([308000, 430000, 560000, 295000, 468000, 545000, 620000, 710000])
 areas = np.array([68, 91, 121, 67, 93, 122, 92, 119])
 
@@ -48,11 +48,11 @@ Area-Price correlation: 0.9147</div>
     <div class="concept-body">
         <p>Pandas provides DataFrames for structured data manipulation. Think of it as "Excel for programmers" — but much more powerful.</p>
 
-        <h4>🎯 Loading and Exploring HDB Data</h4>
+        <h4>🎯 Loading and Exploring housing Data</h4>
         <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
 
 # Load CSV data
-df = pd.read_csv('data/hdb_resale.csv')
+df = pd.read_csv('data/housing_data.csv')
 
 # Quick exploration
 print(df.shape)              # (70, 11) — rows, columns
@@ -62,16 +62,16 @@ print(df.isnull().sum())     # Check for missing values
 print(df.head())             # First 5 rows
 
 # Data cleaning pipeline
-df['resale_price'] = pd.to_numeric(df['resale_price'], errors='coerce')
+df['price'] = pd.to_numeric(df['price'], errors='coerce')
 df['month_dt'] = pd.to_datetime(df['month'], format='%Y-%m')
 df['year'] = df['month_dt'].dt.year
-df['price_per_sqm'] = (df['resale_price'] / df['floor_area_sqm']).round(2)
+df['price_per_sqm'] = (df['price'] / df['area']).round(2)
 
 # Group-by analysis
 town_summary = df.groupby('town').agg(
-    avg_price=('resale_price', 'mean'),
-    count=('resale_price', 'count'),
-    avg_area=('floor_area_sqm', 'mean')
+    avg_price=('price', 'mean'),
+    count=('price', 'count'),
+    avg_area=('area', 'mean')
 ).round(0).sort_values('avg_price', ascending=False)
 
 print(town_summary.head(10))</pre></div>
@@ -95,24 +95,24 @@ print(town_summary.head(10))</pre></div>
         <div class="code-block"><span class="lang-label">Python</span><pre># Method chaining for clean transformation pipeline
 result = (
     df
-    .dropna(subset=['resale_price'])              # Remove null prices
+    .dropna(subset=['price'])              # Remove null prices
     .assign(
-        price_per_sqm=lambda x: x['resale_price'] / x['floor_area_sqm'],
-        is_mature=lambda x: x['town'].isin(['BISHAN', 'TOA PAYOH', 'ANG MO KIO',
+        price_per_sqm=lambda x: x['price'] / x['area'],
+        is_mature=lambda x: x['town'].isin(['DOWNTOWN', 'TOA PAYOH', 'HILLVIEW',
                                              'QUEENSTOWN', 'BUKIT MERAH']),
-        price_band=lambda x: pd.cut(x['resale_price'],
+        price_band=lambda x: pd.cut(x['price'],
                                      bins=[0, 400000, 600000, 800000, float('inf')],
                                      labels=['Budget', 'Mid', 'Premium', 'Luxury'])
     )
-    .query('resale_price > 0')                     # Filter valid prices
-    .sort_values('resale_price', ascending=False)   # Sort by price
+    .query('price > 0')                     # Filter valid prices
+    .sort_values('price', ascending=False)   # Sort by price
 )
 
 # Pivot table
 pivot = df.pivot_table(
-    values='resale_price',
+    values='price',
     index='town',
-    columns='flat_type',
+    columns='property_type',
     aggfunc='mean'
 ).round(0)
 
@@ -125,14 +125,14 @@ print(pivot)</pre></div>
     <ul>
         <li><strong>Chained indexing:</strong> `df[condition]['col'] = val` causes SettingWithCopyWarning. Use `.loc[]` instead.</li>
         <li><strong>Ignoring dtypes:</strong> Numeric columns loaded as strings — always check with `.dtypes`</li>
-        <li><strong>Memory waste:</strong> Use `category` dtype for columns with few unique values (e.g., flat_type)</li>
+        <li><strong>Memory waste:</strong> Use `category` dtype for columns with few unique values (e.g., property_type)</li>
         <li><strong>Loop anti-pattern:</strong> Using `for` loops on DataFrames instead of vectorized operations</li>
     </ul>
 </div>
 
 <div class="exercise-box">
     <h5>🧪 Try It Yourself</h5>
-    <p>1. Load the HDB data and find the most expensive flat in each town.</p>
+    <p>1. Load the housing data and find the most expensive flat in each town.</p>
     <p>2. Create a new column calculating the building age (2024 - lease_commence_date).</p>
     <p>3. Use groupby to find the average price per square meter by flat type.</p>
     <p>4. Create a pivot table showing average prices by town and flat type.</p>

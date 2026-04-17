@@ -1,4 +1,4 @@
-"""NLP module: text classification and sentiment analysis for Singapore data."""
+"""NLP module: text classification and sentiment analysis for any dataset."""
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -10,61 +10,61 @@ import re
 import json
 from models.database import execute_db
 
-# Sample Singapore feedback/news text data for training
+# Sample text data for training — generic, domain-agnostic topics
 SAMPLE_TEXTS = [
-    ("HDB resale prices continue to rise in mature estates like Bishan and Toa Payoh", "housing"),
-    ("New MRT stations along the Thomson-East Coast Line open to passengers", "transport"),
-    ("Singapore schools adopt new STEM curriculum for primary students", "education"),
-    ("Solar panel installations increase across HDB rooftops island-wide", "sustainability"),
-    ("Population density in Punggol exceeds planning projections", "urban_planning"),
-    ("BTO flats in Tengah feature smart home technology and green corridors", "housing"),
-    ("Bus route optimization reduces travel time for Jurong West commuters", "transport"),
-    ("MOE introduces coding education for secondary school students", "education"),
-    ("Singapore targets 2 GWp solar deployment by 2030", "sustainability"),
-    ("URA Master Plan 2019 guides land use for next 10-15 years", "urban_planning"),
-    ("Resale flat prices in Woodlands remain affordable for young families", "housing"),
-    ("Circle Line extension to improve connectivity in eastern Singapore", "transport"),
-    ("Polytechnic graduates see improved employment rates", "education"),
-    ("Green building standards mandatory for new commercial developments", "sustainability"),
-    ("Jurong Lake District designated as second CBD", "urban_planning"),
-    ("Executive condominiums offer middle-income housing option in Sengkang", "housing"),
-    ("LTA enhances first-and-last-mile public transport connectivity", "transport"),
-    ("Singapore universities rank among top in Asia for data science programs", "education"),
-    ("Electric vehicle adoption accelerates with new charging infrastructure", "sustainability"),
-    ("Tengah forest town introduces car-free town centre design", "urban_planning"),
-    ("Five-room HDB flats in central areas cross million-dollar mark", "housing"),
-    ("Cross Island Line will be Singapore longest fully underground MRT line", "transport"),
-    ("National Library Board expands digital learning resources", "education"),
-    ("Singapore pledges net-zero emissions by 2050 under Green Plan", "sustainability"),
-    ("Marina Bay area undergoes further development with new mixed-use projects", "urban_planning"),
-    ("Property cooling measures affect HDB resale transaction volumes", "housing"),
-    ("Grab and public transport integration improves commuter experience", "transport"),
-    ("SkillsFuture initiative supports mid-career transitions into data science", "education"),
-    ("Waste-to-energy plant on Semakau meets sustainability goals", "sustainability"),
-    ("Paya Lebar Air Base relocation to free up land for housing", "urban_planning"),
+    ("Housing prices continue to rise in major urban areas across the country", "housing"),
+    ("New railway stations along the metro line opened to passengers this week", "transport"),
+    ("Schools adopt updated STEM curriculum for primary and secondary students", "education"),
+    ("Solar panel installations increase across residential rooftops nationwide", "sustainability"),
+    ("Population density in suburban districts exceeds city planning projections", "urban_planning"),
+    ("Affordable housing developments feature smart home technology and green spaces", "housing"),
+    ("Bus route optimization reduces average commute time for suburban commuters", "transport"),
+    ("Government introduces coding education for secondary school students", "education"),
+    ("Country targets 2 GW solar deployment within the next decade", "sustainability"),
+    ("Urban master plan guides land use and zoning decisions for the next 15 years", "urban_planning"),
+    ("Resale property prices in outer suburbs remain affordable for young families", "housing"),
+    ("Metro line extension improves east-west connectivity across the city", "transport"),
+    ("Polytechnic and vocational graduates see improved employment rates", "education"),
+    ("Green building standards are now mandatory for new commercial developments", "sustainability"),
+    ("Business district expansion designated as secondary central business area", "urban_planning"),
+    ("Mid-range condominiums offer practical housing options for middle-income families", "housing"),
+    ("Transit authority enhances first-and-last-mile public transport connectivity", "transport"),
+    ("Universities rank among top programs in Asia for data science and AI", "education"),
+    ("Electric vehicle adoption accelerates with expanded charging infrastructure", "sustainability"),
+    ("New eco-district introduces pedestrian-friendly and car-free town centre design", "urban_planning"),
+    ("Prices for large apartments in central areas reach record highs", "housing"),
+    ("The cross-city rail line will be the longest fully underground transit route", "transport"),
+    ("National library expands digital learning resources and databases", "education"),
+    ("Government pledges net-zero emissions by 2050 under comprehensive green plan", "sustainability"),
+    ("Waterfront area undergoes further development with new mixed-use projects", "urban_planning"),
+    ("Property cooling measures affect resale transaction volumes significantly", "housing"),
+    ("Ride-hailing and public transport integration improves commuter experience", "transport"),
+    ("Skills development initiative supports mid-career transitions into data science", "education"),
+    ("Waste-to-energy facilities help meet the nation's sustainability goals", "sustainability"),
+    ("Former industrial zone relocation to free up land for residential development", "urban_planning"),
 ]
 
 SENTIMENT_DATA = [
-    ("The new MRT station is really convenient and well-designed", "positive"),
-    ("Very unhappy with the long construction delays at my HDB block", "negative"),
-    ("Transport fares are reasonable compared to other cities", "positive"),
+    ("The new metro station is really convenient and well-designed", "positive"),
+    ("Very unhappy with the long construction delays at my apartment block", "negative"),
+    ("Transport fares are reasonable compared to other major cities", "positive"),
     ("The bus service frequency needs significant improvement", "negative"),
-    ("Love the new park connector network for cycling", "positive"),
-    ("HDB prices are becoming unaffordable for young couples", "negative"),
-    ("Singapore schools provide excellent education quality", "positive"),
-    ("Too much homework burden on primary school children", "negative"),
-    ("Green spaces in new towns are beautiful and well-maintained", "positive"),
-    ("Air quality during haze season is terrible", "negative"),
+    ("Love the new cycling paths and park connector network", "positive"),
+    ("Housing prices are becoming unaffordable for young couples", "negative"),
+    ("Our local schools provide excellent education quality overall", "positive"),
+    ("Too much homework burden on primary school children every day", "negative"),
+    ("Green spaces in new residential areas are beautiful and well-maintained", "positive"),
+    ("Air quality during peak pollution season is terrible", "negative"),
     ("The housing grant scheme is very helpful for first-time buyers", "positive"),
-    ("Crowded MRT trains during peak hours are uncomfortable", "negative"),
-    ("Smart nation initiatives make government services convenient", "positive"),
-    ("Rising cost of living is a major concern for residents", "negative"),
-    ("Community events in HDB neighbourhoods build social bonds", "positive"),
-    ("Noise pollution from nearby construction is disruptive", "negative"),
-    ("Clean streets and excellent public infrastructure", "positive"),
+    ("Crowded trains during peak hours are extremely uncomfortable", "negative"),
+    ("Smart city initiatives make government services convenient to access", "positive"),
+    ("Rising cost of living is a major concern for many residents", "negative"),
+    ("Community events in residential neighborhoods build social bonds", "positive"),
+    ("Noise pollution from nearby construction projects is very disruptive", "negative"),
+    ("Clean streets and excellent public infrastructure throughout the city", "positive"),
     ("Rental prices in central areas are excessively high", "negative"),
-    ("ERP and COE system helps manage traffic effectively", "positive"),
-    ("Limited parking spaces in older HDB estates", "negative"),
+    ("Congestion pricing system helps manage traffic flow effectively", "positive"),
+    ("Limited parking spaces in older residential estates", "negative"),
 ]
 
 
@@ -137,7 +137,7 @@ def train_text_classifier():
 
 
 def train_sentiment_classifier():
-    """Train a sentiment classifier on Singapore feedback text."""
+    """Train a sentiment classifier on feedback text."""
     texts = [preprocess_text(t[0]) for t in SENTIMENT_DATA]
     labels = [t[1] for t in SENTIMENT_DATA]
 

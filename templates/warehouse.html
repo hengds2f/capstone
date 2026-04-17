@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Data Warehouse - SG Data Science Lab{% endblock %}
+{% block title %}Data Warehouse - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -12,8 +12,8 @@
     <div class="concept-body">
         <p>A data warehouse is a centralized repository optimized for analytical queries (OLAP). Unlike operational databases (OLTP), warehouses store historical, aggregated, and denormalized data.</p>
 
-        <h4>🎯 Singapore Example</h4>
-        <p>Our SQLite database acts as a mini data warehouse for Singapore's HDB and transport data, using a star schema design.</p>
+        <h4>🎯 the region Example</h4>
+        <p>Our SQLite database acts as a mini data warehouse for housing and transport data, using a star schema design.</p>
 
         <div class="code-block"><span class="lang-label">Concept</span><pre>Data Warehouse Architecture:
 
@@ -22,14 +22,14 @@
 │   v_hdb_summary  │  v_transport_summary      │
 ├──────────────────────────────────────────────┤
 │              STAR SCHEMA LAYER               │
-│  fact_hdb_transactions + dim_location        │
+│  fact_transactions + dim_location        │
 │  fact_transport_usage + dim_station          │
 ├──────────────────────────────────────────────┤
 │               STAGING LAYER                  │
-│         raw_hdb_resale (raw data)            │
+│         raw_data (raw data)            │
 ├──────────────────────────────────────────────┤
 │              SOURCE SYSTEMS                  │
-│    data.gov.sg │ LTA DataMall │ CSV files    │
+│    open data portals │ transit data APIs │ CSV files    │
 └──────────────────────────────────────────────┘</pre></div>
     </div>
 </div>
@@ -39,9 +39,9 @@
     <div class="concept-body">
         <p>When dimension data changes over time, we need strategies to handle history.</p>
         <table class="table">
-            <tr><th>SCD Type</th><th>Approach</th><th>SG Example</th></tr>
+            <tr><th>SCD Type</th><th>Approach</th><th>Example</th></tr>
             <tr><td>Type 1</td><td>Overwrite old value</td><td>Update school address after relocation</td></tr>
-            <tr><td>Type 2</td><td>Add new row with dates</td><td>Track MRT station name changes over time</td></tr>
+            <tr><td>Type 2</td><td>Add new row with dates</td><td>Track transit station name changes over time</td></tr>
             <tr><td>Type 3</td><td>Add column for old value</td><td>Store both old and new planning area names</td></tr>
         </table>
 
@@ -76,24 +76,24 @@ SELECT
     t.year,
     t.month,
     COUNT(*) as transaction_count,
-    ROUND(AVG(f.resale_price), 0) as avg_price,
-    MIN(f.resale_price) as min_price,
-    MAX(f.resale_price) as max_price,
+    ROUND(AVG(f.price), 0) as avg_price,
+    MIN(f.price) as min_price,
+    MAX(f.price) as max_price,
     ROUND(AVG(f.price_per_sqm), 2) as avg_price_sqm
-FROM fact_hdb_transactions f
+FROM fact_transactions f
 JOIN dim_location l ON f.location_id = l.location_id
 JOIN dim_time t ON f.time_id = t.time_id
 GROUP BY l.town, t.year, t.month;
 
 -- Dashboard query now hits the aggregate instead of joining 3 tables
-SELECT * FROM agg_monthly_prices WHERE town = 'BISHAN';</pre></div>
+SELECT * FROM agg_monthly_prices WHERE town = 'DOWNTOWN';</pre></div>
     </div>
 </div>
 
 <div class="exercise-box">
     <h5>🧪 Try It Yourself</h5>
-    <p>1. Create an aggregate table for monthly transport usage by MRT line.</p>
-    <p>2. Design a SCD Type 2 table for tracking HDB block demolition and rebuilding.</p>
+    <p>1. Create an aggregate table for monthly transport usage by transit line.</p>
+    <p>2. Design a SCD Type 2 table for tracking housing block demolition and rebuilding.</p>
     <p>3. What are the tradeoffs of pre-computing aggregates vs. querying on-the-fly?</p>
 </div>
 {% endblock %}

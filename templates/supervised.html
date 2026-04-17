@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Supervised Learning - SG Data Science Lab{% endblock %}
+{% block title %}Supervised Learning - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1>🎯 Supervised Learning</h1>
-    <p class="breadcrumb">Home / Supervised — Regression & Classification with Singapore data</p>
+    <p class="breadcrumb">Home / Supervised — Regression & Classification with data</p>
 </div>
 
 <div class="concept-section">
@@ -12,17 +12,17 @@
     <div class="concept-body">
         <p>Supervised learning trains models on labeled data — each input has a known output. The model learns the mapping from features (X) to target (y).</p>
         <table class="table">
-            <tr><th>Task</th><th>Output</th><th>SG Example</th><th>Algorithm</th></tr>
-            <tr><td>Regression</td><td>Continuous number</td><td>Predict HDB resale price</td><td>Linear Regression, Random Forest</td></tr>
+            <tr><th>Task</th><th>Output</th><th>Example</th><th>Algorithm</th></tr>
+            <tr><td>Regression</td><td>Continuous number</td><td>Predict property price</td><td>Linear Regression, Random Forest</td></tr>
             <tr><td>Classification</td><td>Category label</td><td>Classify feedback sentiment</td><td>Logistic Regression, SVM</td></tr>
         </table>
     </div>
 </div>
 
 <div class="concept-section">
-    <div class="concept-header"><h3>🚀 Train HDB Price Models</h3></div>
+    <div class="concept-header"><h3>🚀 Train Price Models</h3></div>
     <div class="concept-body">
-        <p>Train regression models on HDB resale data. Make sure data is loaded first (run pipeline from the Pipeline page).</p>
+        <p>Train regression models on housing data. Make sure data is loaded first (run pipeline from the Pipeline page).</p>
 
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
             <button class="btn" onclick="trainModel('linear_regression')">📈 Linear Regression</button>
@@ -34,23 +34,23 @@
 </div>
 
 <div class="concept-section">
-    <div class="concept-header"><h3>🔮 Predict HDB Price</h3></div>
+    <div class="concept-header"><h3>🔮 Predict housing Price</h3></div>
     <div class="concept-body">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
             <div>
                 <label>Town</label>
                 <select id="pred-town" class="form-control">
-                    <option>BISHAN</option><option>TAMPINES</option>
-                    <option>WOODLANDS</option><option>JURONG EAST</option>
-                    <option>ANG MO KIO</option><option>BEDOK</option>
-                    <option>PUNGGOL</option><option>SENGKANG</option>
+                    <option>DOWNTOWN</option><option>MIDTOWN</option>
+                    <option>WESTSIDE</option><option>LAKESIDE</option>
+                    <option>HILLVIEW</option><option>HARBOR</option>
+                    <option>NORTHPARK</option><option>RIVERSIDE</option>
                 </select>
             </div>
             <div>
                 <label>Flat Type</label>
                 <select id="pred-flat" class="form-control">
-                    <option>3 ROOM</option><option>4 ROOM</option>
-                    <option>5 ROOM</option><option>EXECUTIVE</option>
+                    <option>SMALL</option><option>MEDIUM</option>
+                    <option>LARGE</option><option>PREMIUM</option>
                 </select>
             </div>
             <div>
@@ -89,7 +89,7 @@ print(f"RMSE: ${rmse:,.0f}")    # Average prediction error in dollars
 print(f"MAE:  ${mae:,.0f}")     # Median-like error
 print(f"R²:   {r2:.4f}")       # % of variance explained (1.0 = perfect)
 
-# Interpretation for HDB price model:
+# Interpretation for price model:
 # RMSE = $45,000 means our predictions are ±$45K on average
 # R² = 0.82 means 82% of price variation is explained by our features</pre></div>
 
@@ -134,7 +134,7 @@ print(f"Mean R²: {scores.mean():.4f} ± {scores.std():.4f}")</pre></div>
     <h5>🧪 Exercises</h5>
     <p>1. Train both models and compare their R² and RMSE. Which performs better?</p>
     <p>2. Predict prices for the same flat in different towns. What's the price premium for central locations?</p>
-    <p>3. Why might the model perform poorly for EXECUTIVE flats?</p>
+    <p>3. Why might the model perform poorly for PREMIUM flats?</p>
 </div>
 
 <script>

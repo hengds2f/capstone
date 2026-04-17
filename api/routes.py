@@ -1,4 +1,4 @@
-"""REST API endpoints for Singapore Data Science Lab."""
+"""REST API endpoints for Data Science Lab."""
 import json
 import os
 import traceback
@@ -73,41 +73,26 @@ def api_summary():
 
 @api_bp.route('/housing', methods=['GET'])
 def api_housing():
-    """Get housing data with optional filters."""
+    """Get data from any table (legacy housing endpoint, now generic)."""
     start = datetime.now()
     try:
-        town = request.args.get('town')
-        flat_type = request.args.get('flat_type')
+        table = request.args.get('table', 'raw_hdb_resale')
         limit = request.args.get('limit', 100, type=int)
 
-        query = "SELECT * FROM raw_hdb_resale WHERE 1=1"
-        params = []
+        from models.database import get_all_tables
+        all_tables = get_all_tables()
+        if table not in all_tables:
+            return jsonify({'status': 'error', 'message': f'Table {table} not found'}), 404
 
-        if town:
-            query += " AND town = ?"
-            params.append(town)
-        if flat_type:
-            query += " AND flat_type = ?"
-            params.append(flat_type)
-
-        query += " ORDER BY month DESC LIMIT ?"
-        params.append(limit)
-
-        rows = query_db(query, params)
+        rows = query_db(f'SELECT * FROM "{table}" LIMIT ?', [limit])
         data = [dict(r) for r in rows]
-
-        # Summary stats
-        towns = query_db("SELECT DISTINCT town FROM raw_hdb_resale ORDER BY town")
-        flat_types = query_db("SELECT DISTINCT flat_type FROM raw_hdb_resale ORDER BY flat_type")
 
         result = {
             'status': 'ok',
             'data': data,
             'count': len(data),
-            'filters': {
-                'available_towns': [r['town'] for r in towns],
-                'available_flat_types': [r['flat_type'] for r in flat_types]
-            }
+            'table': table,
+            'available_tables': all_tables
         }
         elapsed = (datetime.now() - start).total_seconds() * 1000
         log_api_call('/api/housing', 'GET', 200, elapsed)
@@ -118,24 +103,18 @@ def api_housing():
 
 @api_bp.route('/transport', methods=['GET'])
 def api_transport():
-    """Get transport data."""
+    """Get data from any table (legacy transport endpoint, now generic)."""
     start = datetime.now()
     try:
-        line = request.args.get('line')
+        table = request.args.get('table', 'fact_transport_usage')
+        limit = request.args.get('limit', 100, type=int)
 
-        query = """SELECT s.station_name, s.station_code, s.line_name, s.line_color,
-                          u.tap_in_count, u.tap_out_count, u.total_trips, u.peak_hour_pct
-                   FROM fact_transport_usage u
-                   JOIN dim_transport_station s ON u.station_id = s.station_id"""
-        params = []
+        from models.database import get_all_tables
+        all_tables = get_all_tables()
+        if table not in all_tables:
+            return jsonify({'status': 'error', 'message': f'Table {table} not found'}), 404
 
-        if line:
-            query += " WHERE s.line_name = ?"
-            params.append(line)
-
-        query += " ORDER BY u.total_trips DESC"
-
-        rows = query_db(query, params)
+        rows = query_db(f'SELECT * FROM "{table}" LIMIT ?', [limit])
         data = [dict(r) for r in rows]
 
         result = {
@@ -152,48 +131,37 @@ def api_transport():
 
 @api_bp.route('/eda', methods=['GET'])
 def api_eda():
-    """Get EDA summary statistics."""
+    """Get EDA summary statistics for all loaded tables."""
     start = datetime.now()
     try:
-        # HDB price stats
-        price_stats = query_db("""
-            SELECT town,
-                   COUNT(*) as count,
-                   ROUND(AVG(resale_price), 2) as avg_price,
-                   MIN(resale_price) as min_price,
-                   MAX(resale_price) as max_price,
-                   ROUND(AVG(floor_area_sqm), 2) as avg_area
-            FROM raw_hdb_resale
-            GROUP BY town
-            ORDER BY avg_price DESC
-        """)
+        import pandas as pd
+        import numpy as np
+        from models.database import get_all_tables, get_row_count
 
-        # Transport stats
-        transport_stats = query_db("""
-            SELECT s.line_name,
-                   COUNT(*) as station_count,
-                   SUM(u.total_trips) as total_trips,
-                   ROUND(AVG(u.peak_hour_pct), 3) as avg_peak_pct
-            FROM fact_transport_usage u
-            JOIN dim_transport_station s ON u.station_id = s.station_id
-            GROUP BY s.line_name
-        """)
+        all_tables = get_all_tables()
+        data_tables = [t for t in all_tables if not t.startswith(('model_', 'api_', 'pipeline_', 'stream_', 'sqlite_'))]
 
-        # Population stats
-        pop_stats = query_db("""
-            SELECT planning_area,
-                   SUM(population_count) as total_population,
-                   AVG(density_per_sqkm) as avg_density
-            FROM fact_population
-            GROUP BY planning_area
-            ORDER BY total_population DESC
-        """)
+        table_stats = {}
+        for t in data_tables[:10]:
+            rows = query_db(f'SELECT * FROM "{t}" LIMIT 200')
+            if not rows:
+                continue
+            df = pd.DataFrame([dict(r) for r in rows])
+            numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+            stats = {
+                'row_count': get_row_count(t),
+                'columns': list(df.columns),
+                'numeric_columns': numeric_cols,
+            }
+            if numeric_cols:
+                desc = df[numeric_cols].describe().round(2).to_dict()
+                stats['describe'] = desc
+            table_stats[t] = stats
 
         result = {
             'status': 'ok',
-            'housing': [dict(r) for r in price_stats],
-            'transport': [dict(r) for r in transport_stats],
-            'population': [dict(r) for r in pop_stats]
+            'tables': table_stats,
+            'total_tables': len(data_tables)
         }
         elapsed = (datetime.now() - start).total_seconds() * 1000
         log_api_call('/api/eda', 'GET', 200, elapsed)

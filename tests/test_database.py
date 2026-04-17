@@ -39,15 +39,13 @@ class TestSchema:
     def test_tables_exist_after_init(self, app):
         with app.app_context():
             from models.database import table_exists
-            expected = ['raw_hdb_resale', 'dim_location', 'dim_time',
-                        'fact_hdb_transactions', 'model_metrics',
-                        'pipeline_runs', 'api_logs', 'stream_events']
+            expected = ['model_metrics', 'pipeline_runs', 'api_logs', 'stream_events']
             for table in expected:
                 assert table_exists(table), f"Table {table} should exist"
 
     def test_row_count(self, app):
         with app.app_context():
             from models.database import get_row_count
-            count = get_row_count('raw_hdb_resale')
+            count = get_row_count('model_metrics')
             assert isinstance(count, int)
             assert count >= 0

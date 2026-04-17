@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Admin & Testing - SG Data Science Lab{% endblock %}
+{% block title %}Admin & Testing - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -74,7 +74,7 @@ def test_model_train(client):
 def test_sql_readonly(client):
     """Test that SQL endpoint blocks write operations."""
     response = client.post('/api/sql/execute',
-                          json={'query': 'DROP TABLE raw_hdb_resale'})
+                          json={'query': 'DROP TABLE raw_data'})
     assert response.status_code == 400  # Should reject
 
 # Run: pytest tests/ -v</pre></div>

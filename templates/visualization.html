@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Visualization Gallery - SG Data Science Lab{% endblock %}
+{% block title %}Visualization Gallery - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1>📊 Visualization Gallery</h1>
-    <p class="breadcrumb">Home / Visualization — Interactive charts from Singapore datasets</p>
+    <p class="breadcrumb">Home / Visualization — Interactive charts from datasets</p>
 </div>
 
 <div class="concept-section">
     <div class="concept-header"><h3>📖 Data Visualization Principles</h3></div>
     <div class="concept-body">
-        <p>Good visualizations tell stories. In Singapore's data-driven governance, charts and dashboards inform policy decisions on housing, transport, and urban planning.</p>
+        <p>Good visualizations tell stories. In Data-driven governance, charts and dashboards inform policy decisions on housing, transport, and urban planning.</p>
         <h4>Key Principles</h4>
         <ul>
             <li><strong>Choose the right chart type:</strong> Bar for comparison, line for trends, scatter for relationships, heatmap for correlations</li>
@@ -23,7 +23,7 @@
 
 {% if charts.transport %}
 <div class="chart-container">
-    <h3 style="margin-bottom: 12px;">🚇 MRT Station Usage</h3>
+    <h3 style="margin-bottom: 12px;">🚇 Transit Station Usage</h3>
     <div id="chart-transport"></div>
 </div>
 {% endif %}
@@ -51,7 +51,7 @@
 
 {% if charts.hdb_bubble %}
 <div class="chart-container">
-    <h3 style="margin-bottom: 12px;">🏘️ HDB Price vs Area (Bubble Chart)</h3>
+    <h3 style="margin-bottom: 12px;">🏘️ Price vs Area (Bubble Chart)</h3>
     <div id="chart-hdb-bubble"></div>
 </div>
 {% endif %}
@@ -59,7 +59,7 @@
 <div class="card">
     <div class="card-header"><h3>📥 Download Data</h3></div>
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-        <a href="/download/hdb" class="btn btn-primary">📄 HDB Data (CSV)</a>
+        <a href="/download/hdb" class="btn btn-primary">📄 Housing Data (CSV)</a>
         <a href="/download/transport" class="btn btn-primary">📄 Transport Data (CSV)</a>
         <a href="/download/population" class="btn btn-primary">📄 Population Data (CSV)</a>
         <a href="/download/energy" class="btn btn-primary">📄 Energy Data (CSV)</a>
@@ -70,22 +70,22 @@
 import pandas as pd
 
 # Creating interactive charts with Plotly
-df = pd.read_csv('data/hdb_resale.csv')
+df = pd.read_csv('data/housing_data.csv')
 
 # Bar chart: Average price by town
 fig = px.bar(
-    df.groupby('town')['resale_price'].mean().reset_index(),
-    x='town', y='resale_price',
-    title='Average HDB Resale Price by Town',
-    labels={'resale_price': 'Average Price (SGD)'}
+    df.groupby('town')['price'].mean().reset_index(),
+    x='town', y='price',
+    title='Average Housing Data Price by Town',
+    labels={'price': 'Average Price (SGD)'}
 )
 fig.update_layout(xaxis_tickangle=-45)
 fig.show()
 
 # Scatter plot with trendline
 fig2 = px.scatter(
-    df, x='floor_area_sqm', y='resale_price',
-    color='flat_type', trendline='ols',
+    df, x='area', y='price',
+    color='property_type', trendline='ols',
     title='Floor Area vs Price with Trendline'
 )
 fig2.show()</pre></div>

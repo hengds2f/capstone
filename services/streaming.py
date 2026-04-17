@@ -1,4 +1,4 @@
-"""Stream processing simulation for Singapore data events."""
+"""Stream processing simulation for data events."""
 import json
 import random
 import time
@@ -26,15 +26,15 @@ def generate_mrt_event():
 
 def generate_housing_event():
     """Generate a simulated housing listing event."""
-    towns = ['ANG MO KIO', 'BEDOK', 'BISHAN', 'TAMPINES', 'WOODLANDS',
-             'JURONG WEST', 'SENGKANG', 'PUNGGOL', 'HOUGANG', 'YISHUN']
-    flat_types = ['3 ROOM', '4 ROOM', '5 ROOM', 'EXECUTIVE']
+    locations = ['Downtown', 'Midtown', 'Uptown', 'Eastside', 'Westside',
+                 'Northgate', 'Southpark', 'Lakeside', 'Riverside', 'Hillcrest']
+    property_types = ['Studio', '1-Bedroom', '2-Bedroom', '3-Bedroom', 'Penthouse']
     return {
         'event_type': 'housing_listing',
-        'source': 'hdb_feed',
+        'source': 'property_feed',
         'payload': json.dumps({
-            'town': random.choice(towns),
-            'flat_type': random.choice(flat_types),
+            'location': random.choice(locations),
+            'property_type': random.choice(property_types),
             'price': random.randint(280000, 900000),
             'floor_area_sqm': random.randint(60, 140),
             'timestamp': datetime.now().isoformat()

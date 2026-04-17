@@ -1,4 +1,4 @@
-"""Singapore Data Science Lab - Flask Application Factory."""
+"""Data Science Lab - Flask Application Factory."""
 import os
 import json
 import pandas as pd
@@ -67,7 +67,7 @@ def create_app():
             pass
 
         modules = [
-            {'name': 'Data Ingestion', 'url': '/ingestion', 'icon': '📥', 'desc': 'Load and validate Singapore datasets'},
+            {'name': 'Data Ingestion', 'url': '/ingestion', 'icon': '📥', 'desc': 'Load and validate datasets from any source'},
             {'name': 'SQL Learning', 'url': '/sql', 'icon': '🗄️', 'desc': 'DDL, DML, joins, CTEs, window functions'},
             {'name': 'Python Wrangling', 'url': '/wrangling', 'icon': '🐍', 'desc': 'Pandas & NumPy data manipulation'},
             {'name': 'EDA', 'url': '/eda', 'icon': '🔍', 'desc': 'Exploratory data analysis & correlations'},
@@ -170,81 +170,99 @@ def create_app():
         # Prepare sample data for demonstration
         demo_data = None
         try:
-            rows = query_db("SELECT * FROM raw_hdb_resale LIMIT 20")
-            if rows:
-                df = pd.DataFrame([dict(r) for r in rows])
-                demo_data = {
-                    'head': df.head().to_html(classes='table table-striped', index=False),
-                    'dtypes': df.dtypes.to_dict(),
-                    'shape': df.shape,
-                    'describe': df.describe().round(2).to_html(classes='table table-striped'),
-                    'null_counts': df.isnull().sum().to_dict()
-                }
-                # Convert dtype objects to strings
-                demo_data['dtypes'] = {k: str(v) for k, v in demo_data['dtypes'].items()}
+            all_tables = get_all_tables()
+            data_tables = [t for t in all_tables if not t.startswith(('model_', 'api_', 'pipeline_', 'stream_', 'sqlite_'))]
+            for t in data_tables:
+                rows = query_db(f'SELECT * FROM "{t}" LIMIT 20')
+                if rows:
+                    df = pd.DataFrame([dict(r) for r in rows])
+                    demo_data = {
+                        'head': df.head().to_html(classes='table table-striped', index=False),
+                        'dtypes': df.dtypes.to_dict(),
+                        'shape': df.shape,
+                        'describe': df.describe().round(2).to_html(classes='table table-striped'),
+                        'null_counts': df.isnull().sum().to_dict()
+                    }
+                    # Convert dtype objects to strings
+                    demo_data['dtypes'] = {k: str(v) for k, v in demo_data['dtypes'].items()}
+                    break
         except Exception:
             pass
         return render_template('python_wrangling.html', demo_data=demo_data)
 
     @app.route('/eda')
     def eda():
-        """EDA module."""
+        """EDA module — works with any loaded dataset."""
         charts = {}
         stats = {}
         try:
-            # Price by town
-            rows = query_db("""
-                SELECT town, AVG(resale_price) as avg_price, COUNT(*) as count
-                FROM raw_hdb_resale GROUP BY town ORDER BY avg_price DESC
-            """)
-            if rows:
-                df = pd.DataFrame([dict(r) for r in rows])
-                fig = px.bar(df, x='town', y='avg_price', color='count',
-                             title='Average HDB Resale Price by Town',
-                             labels={'avg_price': 'Average Price (SGD)', 'town': 'Town'})
-                fig.update_layout(xaxis_tickangle=-45, height=500)
-                charts['price_by_town'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+            # Find all user tables
+            all_tables = get_all_tables()
+            data_tables = [t for t in all_tables if not t.startswith(('model_', 'api_', 'pipeline_', 'stream_', 'dim_', 'fact_', 'v_', 'sqlite_'))]
+            if not data_tables:
+                data_tables = [t for t in all_tables if not t.startswith(('sqlite_',))]
 
-            # Price distribution
-            rows2 = query_db("SELECT resale_price, flat_type FROM raw_hdb_resale")
-            if rows2:
-                df2 = pd.DataFrame([dict(r) for r in rows2])
-                fig2 = px.histogram(df2, x='resale_price', color='flat_type',
-                                    title='HDB Resale Price Distribution by Flat Type',
-                                    labels={'resale_price': 'Resale Price (SGD)'})
-                fig2.update_layout(height=400)
-                charts['price_dist'] = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
+            # Use first available data table for EDA
+            target_table = None
+            df_main = None
+            for t in data_tables:
+                rows = query_db(f'SELECT * FROM "{t}" LIMIT 500')
+                if rows:
+                    target_table = t
+                    df_main = pd.DataFrame([dict(r) for r in rows])
+                    break
 
-            # Floor area vs price scatter
-            rows3 = query_db("SELECT floor_area_sqm, resale_price, town, flat_type FROM raw_hdb_resale")
-            if rows3:
-                df3 = pd.DataFrame([dict(r) for r in rows3])
-                fig3 = px.scatter(df3, x='floor_area_sqm', y='resale_price', color='flat_type',
-                                  hover_data=['town'],
-                                  title='Floor Area vs Resale Price',
-                                  labels={'floor_area_sqm': 'Floor Area (sqm)', 'resale_price': 'Resale Price (SGD)'})
-                fig3.update_layout(height=400)
-                charts['area_vs_price'] = json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)
+            if df_main is not None and not df_main.empty:
+                numeric_cols = list(df_main.select_dtypes(include=[np.number]).columns)
+                cat_cols = list(df_main.select_dtypes(include=['object']).columns)
 
-            # Correlation data
-            if rows3:
-                numeric_cols = df3.select_dtypes(include=[np.number])
-                if not numeric_cols.empty:
-                    corr = numeric_cols.corr().round(3)
+                # Chart 1: Bar chart of first categorical vs first numeric
+                if cat_cols and numeric_cols:
+                    agg = df_main.groupby(cat_cols[0])[numeric_cols[0]].mean().reset_index()
+                    agg.columns = [cat_cols[0], f'avg_{numeric_cols[0]}']
+                    fig = px.bar(agg, x=cat_cols[0], y=f'avg_{numeric_cols[0]}',
+                                 title=f'Average {numeric_cols[0]} by {cat_cols[0]}',
+                                 labels={f'avg_{numeric_cols[0]}': f'Average {numeric_cols[0]}', cat_cols[0]: cat_cols[0]})
+                    fig.update_layout(xaxis_tickangle=-45, height=500)
+                    charts['bar_chart'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+                # Chart 2: Distribution of first numeric column
+                if numeric_cols:
+                    color_col = cat_cols[0] if cat_cols else None
+                    fig2 = px.histogram(df_main, x=numeric_cols[0], color=color_col,
+                                        title=f'Distribution of {numeric_cols[0]}',
+                                        labels={numeric_cols[0]: numeric_cols[0]})
+                    fig2.update_layout(height=400)
+                    charts['distribution'] = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
+
+                # Chart 3: Scatter of first two numeric columns
+                if len(numeric_cols) >= 2:
+                    color_col = cat_cols[0] if cat_cols else None
+                    fig3 = px.scatter(df_main, x=numeric_cols[0], y=numeric_cols[1], color=color_col,
+                                      title=f'{numeric_cols[0]} vs {numeric_cols[1]}',
+                                      labels={numeric_cols[0]: numeric_cols[0], numeric_cols[1]: numeric_cols[1]})
+                    fig3.update_layout(height=400)
+                    charts['scatter'] = json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)
+
+                # Chart 4: Correlation heatmap
+                if len(numeric_cols) >= 2:
+                    corr = df_main[numeric_cols].corr().round(3)
                     fig4 = px.imshow(corr, text_auto=True, title='Correlation Heatmap',
                                      color_continuous_scale='RdBu_r')
                     fig4.update_layout(height=400)
                     charts['correlation'] = json.dumps(fig4, cls=plotly.utils.PlotlyJSONEncoder)
 
-            # Summary statistics
-            stats_rows = query_db("""
-                SELECT COUNT(*) as total, ROUND(AVG(resale_price),0) as avg_price,
-                       MIN(resale_price) as min_price, MAX(resale_price) as max_price,
-                       COUNT(DISTINCT town) as towns, COUNT(DISTINCT flat_type) as flat_types
-                FROM raw_hdb_resale
-            """)
-            if stats_rows:
-                stats = dict(stats_rows[0])
+                # Summary statistics
+                stats = {
+                    'table': target_table,
+                    'total_rows': len(df_main),
+                    'columns': len(df_main.columns),
+                    'numeric_cols': len(numeric_cols),
+                    'categorical_cols': len(cat_cols),
+                }
+                if numeric_cols:
+                    desc = df_main[numeric_cols].describe().round(2)
+                    stats['describe'] = desc.to_dict()
 
         except Exception as e:
             stats['error'] = str(e)
@@ -253,83 +271,44 @@ def create_app():
 
     @app.route('/visualization')
     def visualization():
-        """Visualization gallery."""
+        """Visualization gallery — auto-generates charts from available data."""
         charts = {}
         try:
-            # Transport usage chart
-            rows = query_db("""
-                SELECT s.station_name, s.line_name, s.line_color, u.total_trips, u.peak_hour_pct
-                FROM fact_transport_usage u
-                JOIN dim_transport_station s ON u.station_id = s.station_id
-                ORDER BY u.total_trips DESC LIMIT 20
-            """)
-            if rows:
+            all_tables = get_all_tables()
+            data_tables = [t for t in all_tables if not t.startswith(('model_', 'api_', 'pipeline_', 'stream_', 'sqlite_'))]
+
+            chart_idx = 0
+            for t in data_tables[:5]:  # Up to 5 tables
+                rows = query_db(f'SELECT * FROM "{t}" LIMIT 200')
+                if not rows:
+                    continue
                 df = pd.DataFrame([dict(r) for r in rows])
-                fig = px.bar(df, x='station_name', y='total_trips', color='line_name',
-                             title='Top 20 MRT Stations by Total Trips',
-                             labels={'total_trips': 'Total Trips', 'station_name': 'Station'})
-                fig.update_layout(xaxis_tickangle=-45, height=500)
-                charts['transport'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+                numeric_cols = list(df.select_dtypes(include=[np.number]).columns)
+                cat_cols = list(df.select_dtypes(include=['object']).columns)
 
-            # Population pyramid
-            pop_rows = query_db("""
-                SELECT age_group, gender, SUM(population_count) as total
-                FROM fact_population GROUP BY age_group, gender
-            """)
-            if pop_rows:
-                df_pop = pd.DataFrame([dict(r) for r in pop_rows])
-                fig2 = px.bar(df_pop, x='total', y='age_group', color='gender',
-                              orientation='h', barmode='group',
-                              title='Population Distribution by Age and Gender',
-                              labels={'total': 'Population', 'age_group': 'Age Group'})
-                fig2.update_layout(height=400)
-                charts['population'] = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
+                if cat_cols and numeric_cols:
+                    agg = df.groupby(cat_cols[0])[numeric_cols[0]].mean().reset_index()
+                    agg = agg.sort_values(numeric_cols[0], ascending=False).head(20)
+                    fig = px.bar(agg, x=cat_cols[0], y=numeric_cols[0],
+                                 title=f'{t}: {numeric_cols[0]} by {cat_cols[0]}')
+                    fig.update_layout(xaxis_tickangle=-45, height=500)
+                    charts[f'chart_{chart_idx}'] = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+                    chart_idx += 1
 
-            # Energy consumption
-            energy_rows = query_db("""
-                SELECT month, sector, SUM(consumption_gwh) as total_gwh
-                FROM fact_energy WHERE year = 2023
-                GROUP BY month, sector ORDER BY month
-            """)
-            if energy_rows:
-                df_energy = pd.DataFrame([dict(r) for r in energy_rows])
-                fig3 = px.line(df_energy, x='month', y='total_gwh', color='sector',
-                               title='Monthly Energy Consumption by Sector (2023)',
-                               labels={'total_gwh': 'Consumption (GWh)', 'month': 'Month'})
-                fig3.update_layout(height=400)
-                charts['energy'] = json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)
+                if len(numeric_cols) >= 2:
+                    color_col = cat_cols[0] if cat_cols else None
+                    fig2 = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1], color=color_col,
+                                      title=f'{t}: {numeric_cols[0]} vs {numeric_cols[1]}')
+                    fig2.update_layout(height=400)
+                    charts[f'chart_{chart_idx}'] = json.dumps(fig2, cls=plotly.utils.PlotlyJSONEncoder)
+                    chart_idx += 1
 
-            # School enrollment
-            school_rows = query_db("""
-                SELECT s.school_name, s.school_type, e.enrollment_count
-                FROM fact_school_enrollment e
-                JOIN dim_school s ON e.school_id = s.school_id
-                ORDER BY e.enrollment_count DESC LIMIT 15
-            """)
-            if school_rows:
-                df_school = pd.DataFrame([dict(r) for r in school_rows])
-                fig4 = px.bar(df_school, x='school_name', y='enrollment_count', color='school_type',
-                              title='Top 15 Schools by Enrollment',
-                              labels={'enrollment_count': 'Enrollment', 'school_name': 'School'})
-                fig4.update_layout(xaxis_tickangle=-45, height=500)
-                charts['schools'] = json.dumps(fig4, cls=plotly.utils.PlotlyJSONEncoder)
-
-            # HDB price map (bubble)
-            hdb_rows = query_db("""
-                SELECT l.town, AVG(f.resale_price) as avg_price, COUNT(*) as count,
-                       AVG(l.floor_area_sqm) as avg_area
-                FROM fact_hdb_transactions f
-                JOIN dim_location l ON f.location_id = l.location_id
-                GROUP BY l.town
-            """)
-            if hdb_rows:
-                df_hdb = pd.DataFrame([dict(r) for r in hdb_rows])
-                fig5 = px.scatter(df_hdb, x='avg_area', y='avg_price', size='count',
-                                  color='town', hover_name='town',
-                                  title='HDB Price vs Area by Town (bubble size = transaction count)',
-                                  labels={'avg_price': 'Avg Price (SGD)', 'avg_area': 'Avg Floor Area (sqm)'})
-                fig5.update_layout(height=500)
-                charts['hdb_bubble'] = json.dumps(fig5, cls=plotly.utils.PlotlyJSONEncoder)
+                if numeric_cols:
+                    fig3 = px.histogram(df, x=numeric_cols[0],
+                                        title=f'{t}: Distribution of {numeric_cols[0]}')
+                    fig3.update_layout(height=400)
+                    charts[f'chart_{chart_idx}'] = json.dumps(fig3, cls=plotly.utils.PlotlyJSONEncoder)
+                    chart_idx += 1
 
         except Exception as e:
             charts['error'] = str(e)
@@ -415,7 +394,7 @@ def create_app():
         preprocessing_result = None
         classification_result = None
         try:
-            for img_type in ['building', 'park', 'mrt']:
+            for img_type in ['building', 'park', 'street']:
                 img = generate_sample_image(img_type)
                 images[img_type] = image_to_base64(img)
 
@@ -454,16 +433,19 @@ def create_app():
 
     @app.route('/download/<dataset>')
     def download_data(dataset):
-        """Download dataset as CSV."""
+        """Download any dataset table as CSV."""
         try:
+            # Allow downloading any table in the database
+            all_tables = get_all_tables()
+            # Map common short names to table names, or use as-is
             table_map = {
                 'hdb': 'raw_hdb_resale',
                 'transport': 'fact_transport_usage',
                 'population': 'fact_population',
                 'energy': 'fact_energy'
             }
-            table = table_map.get(dataset)
-            if not table:
+            table = table_map.get(dataset, dataset)
+            if table not in all_tables:
                 return "Dataset not found", 404
 
             rows = query_db(f"SELECT * FROM {table}")

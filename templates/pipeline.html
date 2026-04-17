@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Pipeline & Orchestration - SG Data Science Lab{% endblock %}
+{% block title %}Pipeline & Orchestration - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -62,7 +62,7 @@ def retry_with_backoff(func, max_retries=3, base_delay=1):
             time.sleep(delay)
 
 # Usage
-retry_with_backoff(lambda: ingest_csv_to_db("hdb_resale.csv"))</pre></div>
+retry_with_backoff(lambda: ingest_csv_to_db("housing_data.csv"))</pre></div>
 
         <h4>Idempotent Pipeline Steps</h4>
         <div class="code-block"><span class="lang-label">Python</span><pre># BAD: Appends duplicates on re-run
@@ -133,7 +133,7 @@ def ingest_upsert(df, table, key_col):
         <p>Execute Dagster jobs with ops organized in a dependency DAG. Each op runs with retry policy, logging, and resource injection.</p>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="runDagsterJob('hdb')">🏠 HDB Job</button>
+            <button class="btn btn-primary" onclick="runDagsterJob('hdb')">🏠 housing Job</button>
             <button class="btn btn-primary" onclick="runDagsterJob('transport')">🚇 Transport Job</button>
             <button class="btn btn-primary" onclick="runDagsterJob('energy')">⚡ Energy Job</button>
             <button class="btn btn-success" onclick="runDagsterJob('all')">🚀 Run All Jobs</button>
@@ -150,7 +150,7 @@ def ingest_upsert(df, table, key_col):
 
         <div class="code-block"><span class="lang-label">Concept</span><pre>Asset Dependency Graph:
 
-  raw_hdb_resale ────▶ dagster_asset_hdb_stats ──────┐
+  raw_data ────▶ dagster_asset_hdb_stats ──────┐
                                                       ├──▶ dagster_asset_urban_index
   raw_transport ─────▶ dagster_asset_transport_summary┘
 
@@ -160,8 +160,8 @@ def ingest_upsert(df, table, key_col):
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
             <button class="btn btn-primary" onclick="materializeAssets()">📦 Materialize All Assets</button>
-            <button class="btn btn-secondary" onclick="materializeAssets('raw_hdb_resale')">Raw HDB</button>
-            <button class="btn btn-secondary" onclick="materializeAssets('dagster_asset_hdb_stats')">HDB Stats</button>
+            <button class="btn btn-secondary" onclick="materializeAssets('raw_data')">Raw housing</button>
+            <button class="btn btn-secondary" onclick="materializeAssets('dagster_asset_hdb_stats')">housing Stats</button>
             <button class="btn btn-secondary" onclick="materializeAssets('dagster_asset_urban_index')">Urban Index</button>
             <button class="btn btn-secondary" onclick="loadAssetInfo()">📋 View Asset Catalog</button>
         </div>
@@ -189,35 +189,35 @@ def ingest_upsert(df, table, key_col):
         <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import asset, AssetIn
 
 @asset(group_name="raw")
-def raw_hdb_resale():
-    """Extract raw HDB data from CSV."""
-    return pd.read_csv("data/hdb_resale.csv")
+def raw_data():
+    """Extract raw housing data from CSV."""
+    return pd.read_csv("data/housing_data.csv")
 
 @asset(
-    ins={"raw_hdb": AssetIn(key="raw_hdb_resale")},
+    ins={"raw_input": AssetIn(key="raw_data")},
     group_name="staging"
 )
-def hdb_price_stats(raw_hdb):
+def price_stats(raw_input):
     """Compute price statistics per town."""
-    return raw_hdb.groupby("town").agg(
-        avg_price=("resale_price", "mean"),
-        count=("resale_price", "count")
+    return raw_input.groupby("town").agg(
+        avg_price=("price", "mean"),
+        count=("price", "count")
     ).reset_index()
 
-# Dagster infers: raw_hdb_resale → hdb_price_stats</pre></div>
+# Dagster infers: raw_data → price_stats</pre></div>
 
         <h4>Ops, Graphs, and Jobs</h4>
         <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import op, graph, job, In, Out
 
 @op(out=Out(io_manager_key="sqlite_io"))
 def extract_csv(context):
-    df = pd.read_csv("data/hdb_resale.csv")
+    df = pd.read_csv("data/housing_data.csv")
     context.log.info(f"Extracted {len(df)} rows")
     return df
 
 @op(ins={"df": In()}, out=Out(io_manager_key="sqlite_io"))
 def transform_stats(context, df):
-    result = df.groupby("town")["resale_price"].mean().reset_index()
+    result = df.groupby("town")["price"].mean().reset_index()
     context.log.info(f"Transformed: {len(result)} towns")
     return result
 
@@ -263,9 +263,9 @@ def sqlite_io_manager(context):
 # Usage in Definitions
 from dagster import Definitions
 defs = Definitions(
-    assets=[raw_hdb_resale, hdb_price_stats],
+    assets=[raw_data, price_stats],
     resources={"io_manager": sqlite_io_manager.configured(
-        {"db_path": "database/singapore_data.db"}
+        {"db_path": "database/datascience.db"}
     )}
 )</pre></div>
 
@@ -301,7 +301,7 @@ def new_csv_sensor(context):
 </div>
 
 <!-- ============================================================ -->
-<!-- MELTANO ELT SECTION -->
+<!-- METransport AuthorityNO ELT SECTION -->
 <!-- ============================================================ -->
 
 <div class="concept-section">
@@ -326,7 +326,7 @@ def new_csv_sensor(context):
         <p>Execute ELT pipelines that extract from CSV sources, load raw data into SQLite, then run dbt-style SQL transforms to create staging/analytics tables.</p>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="runMeltanoELT('hdb')">🏠 HDB ELT</button>
+            <button class="btn btn-primary" onclick="runMeltanoELT('hdb')">🏠 housing ELT</button>
             <button class="btn btn-primary" onclick="runMeltanoELT('transport')">🚇 Transport ELT</button>
             <button class="btn btn-primary" onclick="runMeltanoELT('energy')">⚡ Energy ELT</button>
             <button class="btn btn-success" onclick="runMeltanoELT('full')">🚀 Run All ELT</button>
@@ -351,14 +351,14 @@ plugins:
     - name: target-sqlite    # Singer target for SQLite
       pip_url: target-sqlite~=0.1
       config:
-        database: database/singapore_data.db
+        database: database/datascience.db
 
   transformers:
     - name: dbt-sqlite       # dbt for SQL transformations
       pip_url: dbt-core dbt-sqlite
 
 jobs:
-  - name: hdb-elt
+  - name: data-elt
     tasks:
       - tap-csv target-sqlite   # Extract & Load
       - dbt-sqlite:run          # Transform
@@ -366,7 +366,7 @@ jobs:
 schedules:
   - name: daily-hdb-sync
     interval: "@daily"
-    job: hdb-elt</pre></div>
+    job: data-elt</pre></div>
     </div>
 </div>
 
@@ -375,15 +375,15 @@ schedules:
     <div class="concept-body">
         <h4>Singer Messages</h4>
         <div class="code-block"><span class="lang-label">JSON</span><pre>// SCHEMA message — declares the stream's schema
-{"type": "SCHEMA", "stream": "hdb_resale",
- "schema": {"properties": {"town": {"type": "string"}, "resale_price": {"type": "number"}}}}
+{"type": "SCHEMA", "stream": "housing_data",
+ "schema": {"properties": {"town": {"type": "string"}, "price": {"type": "number"}}}}
 
 // RECORD message — a single data record
-{"type": "RECORD", "stream": "hdb_resale",
- "record": {"town": "ANG MO KIO", "resale_price": 450000}}
+{"type": "RECORD", "stream": "housing_data",
+ "record": {"town": "HILLVIEW", "price": 450000}}
 
 // STATE message — checkpoint for incremental extraction
-{"type": "STATE", "value": {"bookmarks": {"hdb_resale": {"last_extracted": "2024-01-15"}}}}</pre></div>
+{"type": "STATE", "value": {"bookmarks": {"housing_data": {"last_extracted": "2024-01-15"}}}}</pre></div>
 
         <h4>ELT Pipeline Flow</h4>
         <div class="code-block"><span class="lang-label">Concept</span><pre>┌─────────────┐    Singer     ┌──────────────┐    SQL     ┌──────────────┐
@@ -398,18 +398,18 @@ schedules:
         <div class="code-block"><span class="lang-label">Python</span><pre>from services.meltano_elt import MeltanoELTPipeline
 
 # 1. Configure the pipeline
-pipeline = MeltanoELTPipeline('hdb_elt')
-pipeline.configure_extract('data/hdb_resale.csv', 'csv')
-pipeline.configure_load('raw_hdb_resale')
+pipeline = MeltanoELTPipeline('data_elt')
+pipeline.configure_extract('data/housing_data.csv', 'csv')
+pipeline.configure_load('raw_data')
 
 # 2. Add dbt-style SQL transforms
 pipeline.add_transform('stg_hdb_monthly_avg', """
     CREATE TABLE IF NOT EXISTS stg_hdb_monthly_avg AS
-    SELECT month, town, flat_type,
+    SELECT month, town, property_type,
            COUNT(*) as transaction_count,
-           ROUND(AVG(resale_price), 2) as avg_price
-    FROM raw_hdb_resale
-    GROUP BY month, town, flat_type
+           ROUND(AVG(price), 2) as avg_price
+    FROM raw_data
+    GROUP BY month, town, property_type
 """)
 
 # 3. Run the full ELT
@@ -426,7 +426,7 @@ result = pipeline.run()
             <div class="form-group">
                 <label>Source File (from data/ folder)</label>
                 <select id="elt-source" class="form-control">
-                    <option value="hdb_resale.csv">hdb_resale.csv</option>
+                    <option value="housing_data.csv">housing_data.csv</option>
                     <option value="transport_usage.csv">transport_usage.csv</option>
                     <option value="population.csv">population.csv</option>
                     <option value="schools.csv">schools.csv</option>

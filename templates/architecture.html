@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Data Architecture - SG Data Science Lab{% endblock %}
+{% block title %}Data Architecture - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -11,7 +11,7 @@
     <div class="concept-header"><h3>📖 Star Schema Design</h3></div>
     <div class="concept-body">
         <p>The star schema is the most common data warehouse design pattern. It separates <strong>facts</strong> (measurable events) from <strong>dimensions</strong> (descriptive context).</p>
-        <h4>🎯 Singapore HDB Star Schema</h4>
+        <h4>🎯 Star Schema Design</h4>
         <div class="code-block"><span class="lang-label">Schema</span><pre>                    ┌──────────────────┐
                     │   dim_location   │
                     │──────────────────│
@@ -20,17 +20,17 @@
                     │ block            │
                     │ street_name      │
                     │ planning_area    │
-                    │ floor_area_sqm   │
+                    │ area   │
                     └────────┬─────────┘
                              │
 ┌──────────────────┐   ┌─────┴────────────────┐   ┌────────────────────┐
-│    dim_time      │   │ fact_hdb_transactions │   │ dim_property_type  │
+│    dim_time      │   │ fact_transactions │   │ dim_property_type  │
 │──────────────────│   │──────────────────────│   │────────────────────│
 │ time_id (PK)     │───│ transaction_id (PK)  │───│ property_type_id   │
-│ full_date        │   │ location_id (FK)     │   │ flat_type          │
+│ full_date        │   │ location_id (FK)     │   │ property_type          │
 │ year             │   │ time_id (FK)         │   │ flat_model         │
 │ quarter          │   │ property_type_id (FK)│   │ lease_commence_yr  │
-│ month            │   │ resale_price         │   │ remaining_lease    │
+│ month            │   │ price         │   │ remaining_lease    │
 │ month_name       │   │ price_per_sqm        │   └────────────────────┘
 └──────────────────┘   └──────────────────────┘</pre></div>
         <p><strong>Why star schema?</strong> Queries are intuitive — always start from the fact table and JOIN to dimensions. Aggregations are fast because fact tables contain only keys and measures.</p>
@@ -53,7 +53,7 @@
 -- Each transaction references location_id (FK)
 -- Benefit: Update town name in one place
 
--- Denormalized: raw_hdb_resale stores everything flat
+-- Denormalized: raw_data stores everything flat
 -- No JOINs needed for simple queries
 -- Benefit: Faster reads, simpler analysis queries</pre></div>
     </div>
@@ -82,6 +82,6 @@
     <h5>🧪 Try It Yourself</h5>
     <p>1. Design a snowflake schema by splitting dim_location into dim_town and dim_street.</p>
     <p>2. Add a dim_weather_condition dimension to the transport fact table.</p>
-    <p>3. When would you choose a normalized schema over a star schema for Singapore data?</p>
+    <p>3. When would you choose a normalized schema over a star schema for data?</p>
 </div>
 {% endblock %}

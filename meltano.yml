@@ -1,6 +1,6 @@
 version: 1
 default_environment: dev
-project_id: sg-datascience-lab
+project_id: datascience-lab
 
 environments:
   - name: dev
@@ -26,7 +26,7 @@ plugins:
       namespace: target_sqlite
       pip_url: target-sqlite~=0.1
       config:
-        database: database/singapore_data.db
+        database: database/datascience.db
 
     - name: target-jsonl
       namespace: target_jsonl
@@ -47,16 +47,16 @@ plugins:
       pip_url: great_expectations
 
 schedules:
-  - name: daily-hdb-sync
+  - name: daily-data-sync
     interval: "@daily"
-    job: hdb-elt
+    job: data-elt
 
   - name: weekly-full-sync
     interval: "@weekly"
     job: full-elt
 
 jobs:
-  - name: hdb-elt
+  - name: data-elt
     tasks:
       - tap-csv target-sqlite
       - dbt-sqlite:run

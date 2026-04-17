@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Time Series Forecasting - SG Data Science Lab{% endblock %}
+{% block title %}Time Series Forecasting - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -21,8 +21,8 @@ Y(t) = Trend + Seasonality + Residual
 │ Residual:  ···  · · ··· ·  ···    │  Random noise
 └────────────────────────────────────┘
 
-SG Examples:
-- Trend: MRT ridership growing year over year
+Examples:
+- Trend: transit ridership growing year over year
 - Seasonality: Higher transport usage on weekdays
 - Residual: Unexpected spikes during events (NDP, F1)</pre></div>
     </div>
@@ -51,7 +51,7 @@ SG Examples:
         <div class="code-block"><span class="lang-label">Python</span><pre>import pandas as pd
 import numpy as np
 
-# MRT daily ridership data
+# transit daily ridership data
 dates = pd.date_range('2024-01-01', periods=90, freq='D')
 ridership = 3000000 + np.cumsum(np.random.randn(90) * 50000)
 
@@ -133,7 +133,7 @@ print(f"7-day forecast: {forecast.values}")</pre></div>
     <ul>
         <li><strong>Forecasting non-stationary data</strong>: Always check stationarity before applying ARIMA</li>
         <li><strong>Overfitting to noise</strong>: Large window = smoother forecast but misses recent changes</li>
-        <li><strong>Ignoring seasonality</strong>: MRT data has strong weekly patterns — use seasonal decomposition</li>
+        <li><strong>Ignoring seasonality</strong>: transit data has strong weekly patterns — use seasonal decomposition</li>
     </ul>
 </div>
 
@@ -141,6 +141,6 @@ print(f"7-day forecast: {forecast.values}")</pre></div>
     <h5>🧪 Exercises</h5>
     <p>1. Compare SMA-7 vs SMA-30 forecasts. Which is more responsive to changes?</p>
     <p>2. Try different alpha values (0.1, 0.5, 0.9) for exponential smoothing. What happens?</p>
-    <p>3. Would you use time series forecasting for HDB prices? Why or why not?</p>
+    <p>3. Would you use time series forecasting for housing prices? Why or why not?</p>
 </div>
 {% endblock %}

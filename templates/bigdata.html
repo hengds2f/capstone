@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Big Data & Engineering - SG Data Science Lab{% endblock %}
+{% block title %}Big Data & Engineering - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -10,22 +10,22 @@
 <div class="concept-section">
     <div class="concept-header"><h3>📖 Batch vs Streaming Processing</h3></div>
     <div class="concept-body">
-        <p>Data processing falls into two paradigms, both relevant to Singapore's data infrastructure:</p>
+        <p>Data processing falls into two paradigms, both relevant to modern data infrastructure:</p>
         <h4>🎯 Batch Processing</h4>
-        <p>Processes large volumes of data at scheduled intervals. <strong>Singapore example:</strong> Monthly HDB resale transaction reports published by HDB. Data is collected over a month, then processed and published as a complete dataset.</p>
+        <p>Processes large volumes of data at scheduled intervals. <strong>Example:</strong> Monthly housing resale transaction reports published by housing. Data is collected over a month, then processed and published as a complete dataset.</p>
         <div class="code-block"><span class="lang-label">Concept</span><pre>Batch Processing Pipeline:
 ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│ HDB Data │───>│  Extract  │───>│Transform │───>│   Load   │
+│ housing Data │───>│  Extract  │───>│Transform │───>│   Load   │
 │  (CSV)   │    │  Monthly  │    │  Clean   │    │  SQLite  │
 └──────────┘    └──────────┘    └──────────┘    └──────────┘
                   Scheduled       Pandas          Database
                   (Cron/DAG)      Processing      Storage</pre></div>
 
         <h4>🎯 Stream Processing</h4>
-        <p>Processes data in real-time as it arrives. <strong>Singapore example:</strong> MRT crowding updates every few minutes from LTA, weather updates from NEA, or ERP gantry readings in real-time.</p>
+        <p>Processes data in real-time as it arrives. <strong>Example:</strong> transit crowding updates every few minutes from Transport Authority, weather updates from Environment Agency, or road toll readings in real-time.</p>
         <div class="code-block"><span class="lang-label">Concept</span><pre>Stream Processing Pipeline:
 ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│MRT Crowd │───>│  Ingest   │───>│ Window   │───>│  Alert   │
+│transit Crowd │───>│  Ingest   │───>│ Window   │───>│  Alert   │
 │  Events  │    │  Events   │    │ Aggregate│    │Dashboard │
 └──────────┘    └──────────┘    └──────────┘    └──────────┘
                   Continuous     5-min windows   Real-time</pre></div>
@@ -41,7 +41,7 @@
             <tr><td>Data format</td><td>Raw (JSON, CSV, Parquet)</td><td>Structured (tables)</td></tr>
             <tr><td>Users</td><td>Data scientists, engineers</td><td>Analysts, business users</td></tr>
             <tr><td>Processing</td><td>ELT (Extract-Load-Transform)</td><td>ETL (Extract-Transform-Load)</td></tr>
-            <tr><td>SG example</td><td>Raw data.gov.sg API responses</td><td>Star schema with HDB facts/dims</td></tr>
+            <tr><td>Example</td><td>Raw open data portal API responses</td><td>Star schema with facts/dims</td></tr>
             <tr><td>Cost</td><td>Lower (cheap storage)</td><td>Higher (compute + storage)</td></tr>
         </table>
     </div>
@@ -53,7 +53,7 @@
         <div class="two-col">
             <div>
                 <h4>ETL (Traditional)</h4>
-                <div class="code-block"><pre>1. Extract from data.gov.sg API
+                <div class="code-block"><pre>1. Extract from open data portal API
 2. Transform in Python (clean, validate)
 3. Load into dimensional tables
 
@@ -62,7 +62,7 @@
             </div>
             <div>
                 <h4>ELT (Modern)</h4>
-                <div class="code-block"><pre>1. Extract from data.gov.sg API
+                <div class="code-block"><pre>1. Extract from open data portal API
 2. Load raw data into data lake
 3. Transform using SQL in warehouse
 
@@ -77,23 +77,23 @@
     <div class="concept-header"><h3>📖 Key Engineering Concepts</h3></div>
     <div class="concept-body">
         <h4>Idempotency</h4>
-        <p>Running the same pipeline multiple times produces the same result. <strong>SG example:</strong> Re-ingesting January 2024 HDB data should not create duplicate rows.</p>
+        <p>Running the same pipeline multiple times produces the same result. <strong>Example:</strong> Re-ingesting January 2024 housing data should not create duplicate rows.</p>
         <div class="code-block"><span class="lang-label">Python</span><pre># Idempotent ingestion pattern
 def ingest_hdb_month(month):
     # Delete existing data for this month first
-    execute_db("DELETE FROM raw_hdb_resale WHERE month = ?", (month,))
+    execute_db("DELETE FROM raw_data WHERE month = ?", (month,))
     # Then insert fresh data
-    df = fetch_hdb_data(month)
-    df.to_sql('raw_hdb_resale', conn, if_exists='append', index=False)</pre></div>
+    df = fetch_housing_data(month)
+    df.to_sql('raw_data', conn, if_exists='append', index=False)</pre></div>
 
         <h4>Partitioning</h4>
-        <p>Splitting large datasets into smaller chunks for parallel processing. <strong>SG example:</strong> Partition HDB data by town or by year-month for faster queries.</p>
+        <p>Splitting large datasets into smaller chunks for parallel processing. <strong>Example:</strong> Partition housing data by town or by year-month for faster queries.</p>
 
         <h4>Event-Driven Architecture</h4>
-        <p>Systems react to events rather than polling. <strong>SG example:</strong> When a new MRT crowding update is published, trigger alerts and dashboard refreshes.</p>
+        <p>Systems react to events rather than polling. <strong>Example:</strong> When a new transit crowding update is published, trigger alerts and dashboard refreshes.</p>
 
         <h4>Data Lineage</h4>
-        <p>Tracking where data came from and how it was transformed. <strong>SG example:</strong> "This average HDB price was derived from raw_hdb_resale → cleaned → aggregated by town."</p>
+        <p>Tracking where data came from and how it was transformed. <strong>Example:</strong> "This average housing price was derived from raw_data → cleaned → aggregated by town."</p>
 
         <h4>Retries and Monitoring</h4>
         <div class="code-block"><span class="lang-label">Python</span><pre>import time
@@ -113,8 +113,8 @@ def with_retry(func, max_retries=3, delay=2):
 
 <div class="exercise-box">
     <h5>🧪 Try It Yourself</h5>
-    <p>1. Design an ETL pipeline for Singapore weather data from NEA.</p>
-    <p>2. How would you make the HDB ingestion pipeline idempotent?</p>
+    <p>1. Design an ETL pipeline for various weather data from Environment Agency.</p>
+    <p>2. How would you make the housing ingestion pipeline idempotent?</p>
     <p>3. Draw a data lineage diagram from raw CSV to average price per town.</p>
 </div>
 {% endblock %}

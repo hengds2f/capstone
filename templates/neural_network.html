@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Neural Networks - SG Data Science Lab{% endblock %}
+{% block title %}Neural Networks - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <h1>🧠 Neural Networks</h1>
-    <p class="breadcrumb">Home / Neural Networks — Deep learning concepts for Singapore data</p>
+    <p class="breadcrumb">Home / Neural Networks — Deep learning concepts for data</p>
 </div>
 
 <div class="concept-section">
@@ -18,10 +18,10 @@
         <h4>Training Process</h4>
         <div class="code-block"><span class="lang-label">Concept</span><pre>{{ nn_info.training_process }}</pre></div>
         {% else %}
-        <div class="code-block"><span class="lang-label">Architecture</span><pre>Neural Network for HDB Price Prediction:
+        <div class="code-block"><span class="lang-label">Architecture</span><pre>Neural Network for Price Prediction:
 
 Input Layer (5 neurons):
-  [town_encoded, flat_type_encoded, floor_area, storey, lease_remaining]
+  [town_encoded, property_type_encoded, floor_area, storey, lease_remaining]
         ↓
 Hidden Layer 1 (64 neurons, ReLU activation)
         ↓
@@ -39,7 +39,7 @@ Output Layer (1 neuron, linear activation)
         <div class="code-block"><span class="lang-label">Python</span><pre>import torch
 import torch.nn as nn
 
-class HDBPriceNet(nn.Module):
+class PriceNet(nn.Module):
     def __init__(self, input_size=5):
         super().__init__()
         self.network = nn.Sequential(
@@ -57,7 +57,7 @@ class HDBPriceNet(nn.Module):
         return self.network(x)
 
 # Training loop
-model = HDBPriceNet()
+model = PriceNet()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 criterion = nn.MSELoss()
 
@@ -96,7 +96,7 @@ for epoch in range(100):
   ✅ Small-medium dataset (&lt;100K rows)
   ✅ Need interpretability
   ✅ Limited compute resources
-  → Our HDB price prediction uses Random Forest
+  → Our price prediction uses Random Forest
 
 Use Neural Networks when:
   ✅ Unstructured data (images, text, audio)
@@ -110,8 +110,8 @@ Use Neural Networks when:
 <div class="concept-section">
     <div class="concept-header"><h3>📖 CNN for Image Classification</h3></div>
     <div class="concept-body">
-        <div class="code-block"><span class="lang-label">Python</span><pre>class SingaporeImageClassifier(nn.Module):
-    """CNN to classify Singapore urban scenes."""
+        <div class="code-block"><span class="lang-label">Python</span><pre>class ImageClassifier(nn.Module):
+    """CNN to classify urban scenes."""
     def __init__(self, num_classes=5):
         super().__init__()
         self.features = nn.Sequential(
@@ -142,7 +142,7 @@ Use Neural Networks when:
         x = self.features(x)
         return self.classifier(x)
 
-# Classes: HDB, MRT Station, Park, Hawker Centre, Office Building</pre></div>
+# Classes: Residential, Transit, Park, Market, Office</pre></div>
     </div>
 </div>
 
@@ -157,8 +157,8 @@ Use Neural Networks when:
 
 <div class="exercise-box">
     <h5>🧪 Exercises</h5>
-    <p>1. How many trainable parameters does the HDBPriceNet have? Calculate manually.</p>
+    <p>1. How many trainable parameters does the PriceNet have? Calculate manually.</p>
     <p>2. What happens if you remove the Dropout layers? How would this affect test performance?</p>
-    <p>3. Design a neural network architecture for predicting MRT station crowding.</p>
+    <p>3. Design a neural network architecture for predicting transit station crowding.</p>
 </div>
 {% endblock %}

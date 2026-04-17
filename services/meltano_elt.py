@@ -1,4 +1,4 @@
-"""Meltano-style ELT service: Extract, Load, Transform pipeline for Singapore datasets."""
+"""Meltano-style ELT service: Extract, Load, Transform pipeline for datasets."""
 import pandas as pd
 import os
 import json
@@ -282,7 +282,7 @@ class MeltanoELTPipeline:
 
 
 # ============================================================
-# Pre-built ELT pipelines for Singapore datasets
+# Pre-built ELT pipelines for datasets
 # ============================================================
 
 def build_hdb_elt_pipeline():

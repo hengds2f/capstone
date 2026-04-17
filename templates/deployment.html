@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Flask Deployment - SG Data Science Lab{% endblock %}
+{% block title %}Flask Deployment - Data Science Lab{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -10,7 +10,7 @@
 <div class="concept-section">
     <div class="concept-header"><h3>📖 Application Architecture</h3></div>
     <div class="concept-body">
-        <div class="code-block"><span class="lang-label">Concept</span><pre>Singapore Data Science Lab — Full-Stack Architecture:
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Data Science Lab — Full-Stack Architecture:
 
 ┌─────────────────────────────────────────────┐
 │              BROWSER (Frontend)             │
@@ -40,11 +40,11 @@
         <table class="table">
             <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
             <tr><td>GET</td><td>/api/summary</td><td>Database summary statistics</td></tr>
-            <tr><td>GET</td><td>/api/housing</td><td>HDB resale data (with filters)</td></tr>
+            <tr><td>GET</td><td>/api/housing</td><td>housing data (with filters)</td></tr>
             <tr><td>GET</td><td>/api/transport</td><td>Transport usage data</td></tr>
             <tr><td>GET</td><td>/api/eda</td><td>Exploratory data analysis stats</td></tr>
             <tr><td>POST</td><td>/api/model/train</td><td>Train ML model</td></tr>
-            <tr><td>POST</td><td>/api/model/predict</td><td>Predict HDB price</td></tr>
+            <tr><td>POST</td><td>/api/model/predict</td><td>Predict Price</td></tr>
             <tr><td>GET</td><td>/api/model/history</td><td>Model training history</td></tr>
             <tr><td>POST</td><td>/api/pipeline/run</td><td>Run data pipeline</td></tr>
             <tr><td>GET</td><td>/api/pipeline/history</td><td>Pipeline run history</td></tr>
@@ -58,9 +58,9 @@
 
         <h4>API Usage Example</h4>
         <div class="code-block"><span class="lang-label">JavaScript</span><pre>// GET request with query parameters
-const response = await fetch('/api/housing?town=BISHAN&flat_type=4%20ROOM');
+const response = await fetch('/api/housing?town=DOWNTOWN&property_type=MEDIUM');
 const data = await response.json();
-console.log(data.data);  // Array of HDB records
+console.log(data.data);  // Array of housing records
 
 // POST request with JSON body
 const trainResponse = await fetch('/api/model/train', {
@@ -77,7 +77,7 @@ console.log(`R² = ${result.metrics.r2_score}`);</pre></div>
 base_url = "http://localhost:5000"
 
 # Get housing data
-resp = requests.get(f"{base_url}/api/housing", params={"town": "BISHAN"})
+resp = requests.get(f"{base_url}/api/housing", params={"town": "DOWNTOWN"})
 data = resp.json()["data"]
 
 # Train a model
