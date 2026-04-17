@@ -2,7 +2,9 @@
 import pandas as pd
 import os
 import json
+import requests
 from datetime import datetime
+from urllib.parse import urlparse
 from models.database import get_connection, execute_db
 
 
@@ -15,6 +17,60 @@ def ingest_csv_to_table(csv_path, table_name, if_exists='append'):
         execute_db(
             "INSERT INTO pipeline_runs (pipeline_name, step_name, status, started_at, completed_at, rows_processed) VALUES (?,?,?,?,?,?)",
             ('csv_ingestion', f'load_{table_name}', 'completed', datetime.now().isoformat(), datetime.now().isoformat(), len(df))
+        )
+        return len(df), list(df.columns)
+    finally:
+        conn.close()
+
+
+def ingest_from_url(url, table_name, save_dir, if_exists='append'):
+    """Download a CSV/JSON/Excel file from an external URL and load into a SQLite table."""
+    parsed = urlparse(url)
+    if not parsed.scheme in ('http', 'https'):
+        raise ValueError("Only http and https URLs are supported")
+
+    resp = requests.get(url, timeout=30, stream=True)
+    resp.raise_for_status()
+
+    content_type = resp.headers.get('Content-Type', '').lower()
+    path_lower = parsed.path.lower()
+
+    # Determine file format from extension or content type
+    if path_lower.endswith('.json') or 'json' in content_type:
+        fmt = 'json'
+        ext = '.json'
+    elif path_lower.endswith('.xlsx') or path_lower.endswith('.xls') or 'spreadsheet' in content_type:
+        fmt = 'excel'
+        ext = '.xlsx'
+    else:
+        fmt = 'csv'
+        ext = '.csv'
+
+    # Save file locally
+    safe_name = table_name.replace(' ', '_').replace('/', '_')
+    filename = f"{safe_name}{ext}"
+    filepath = os.path.join(save_dir, filename)
+    with open(filepath, 'wb') as f:
+        for chunk in resp.iter_content(chunk_size=8192):
+            f.write(chunk)
+
+    # Read into DataFrame
+    if fmt == 'json':
+        df = pd.read_json(filepath)
+    elif fmt == 'excel':
+        df = pd.read_excel(filepath)
+    else:
+        df = pd.read_csv(filepath)
+
+    if df.empty:
+        raise ValueError("Downloaded file contains no data")
+
+    conn = get_connection()
+    try:
+        df.to_sql(table_name, conn, if_exists=if_exists, index=False)
+        execute_db(
+            "INSERT INTO pipeline_runs (pipeline_name, step_name, status, started_at, completed_at, rows_processed) VALUES (?,?,?,?,?,?)",
+            ('url_ingestion', f'load_{table_name}', 'completed', datetime.now().isoformat(), datetime.now().isoformat(), len(df))
         )
         return len(df), list(df.columns)
     finally:

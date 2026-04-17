@@ -55,6 +55,25 @@
 </div>
 
 <div class="card">
+    <div class="card-header"><h3>🌐 Ingest from External URL</h3></div>
+    <form method="POST">
+        <input type="hidden" name="action" value="ingest_url">
+        <div class="concept-body">
+            <p>Paste a direct link to a CSV, JSON, or Excel file hosted online (e.g., data.gov.sg, Kaggle, GitHub raw files).</p>
+            <div class="form-group">
+                <label>Dataset URL</label>
+                <input type="url" name="dataset_url" class="form-control" placeholder="https://example.com/data.csv" required>
+            </div>
+            <div class="form-group">
+                <label>Table Name</label>
+                <input type="text" name="url_table_name" class="form-control" placeholder="e.g., external_data" value="external_data">
+            </div>
+            <button type="submit" class="btn btn-primary">🌐 Download & Load</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
     <div class="card-header"><h3>🌐 Mock API — data.gov.sg</h3></div>
     <div class="concept-body">
         <p>In production, you would call the data.gov.sg API directly. Here's how the mock API layer works:</p>

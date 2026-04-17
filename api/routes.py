@@ -1,8 +1,9 @@
 """REST API endpoints for Singapore Data Science Lab."""
 import json
+import os
 import traceback
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from models.database import query_db, execute_db, get_all_tables, get_row_count
 from models.ml_models import (
     train_linear_regression, train_random_forest, train_kmeans_clustering,
@@ -15,6 +16,7 @@ from models.nlp_models import train_text_classifier, train_sentiment_classifier,
 from services.pipeline import build_full_pipeline, get_pipeline_history
 from services.streaming import generate_event_batch, ingest_events, process_window, get_stream_stats
 from services.validation import run_all_validations
+from services.ingestion import ingest_csv_to_table, ingest_from_url
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -387,5 +389,62 @@ def api_model_history():
     try:
         history = get_model_history()
         return jsonify({'status': 'ok', 'data': history})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/ingest/upload', methods=['POST'])
+def api_ingest_upload():
+    """Upload a CSV file and load it into a database table."""
+    start = datetime.now()
+    try:
+        file = request.files.get('file')
+        table_name = request.form.get('table_name', 'uploaded_data')
+
+        if not file or not file.filename:
+            return jsonify({'status': 'error', 'message': 'No file provided'}), 400
+
+        upload_dir = current_app.config['UPLOAD_FOLDER']
+        filepath = os.path.join(upload_dir, file.filename)
+        file.save(filepath)
+
+        count, cols = ingest_csv_to_table(filepath, table_name)
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/ingest/upload', 'POST', 200, elapsed)
+        return jsonify({
+            'status': 'ok',
+            'rows_loaded': count,
+            'columns': cols,
+            'table_name': table_name
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/ingest/url', methods=['POST'])
+def api_ingest_url():
+    """Ingest an external dataset from a URL (CSV, JSON, or Excel)."""
+    start = datetime.now()
+    try:
+        data = request.get_json() or {}
+        url = data.get('url', '').strip()
+        table_name = data.get('table_name', 'external_data')
+
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+
+        upload_dir = current_app.config['UPLOAD_FOLDER']
+        count, cols = ingest_from_url(url, table_name, upload_dir)
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/ingest/url', 'POST', 200, elapsed)
+        return jsonify({
+            'status': 'ok',
+            'rows_loaded': count,
+            'columns': cols,
+            'table_name': table_name,
+            'source_url': url
+        })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500

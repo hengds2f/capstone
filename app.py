@@ -10,7 +10,7 @@ from models.database import init_db, query_db, execute_db, get_all_tables, get_r
 from services.ingestion import (
     ingest_hdb_data, ingest_transport_data, ingest_population_data,
     ingest_school_data, ingest_energy_data, ingest_feedback_data,
-    mock_datagov_api, validate_dataframe, ingest_csv_to_table
+    mock_datagov_api, validate_dataframe, ingest_csv_to_table, ingest_from_url
 )
 from services.pipeline import build_full_pipeline, get_pipeline_history
 from services.validation import run_all_validations
@@ -117,6 +117,17 @@ def create_app():
                         message = f"Loaded {count} rows into '{table}'. Columns: {cols}"
                     except Exception as e:
                         message = f"Error: {str(e)}"
+            elif action == 'ingest_url':
+                url = request.form.get('dataset_url', '').strip()
+                table = request.form.get('url_table_name', 'external_data')
+                if url:
+                    try:
+                        count, cols = ingest_from_url(url, table, app.config['UPLOAD_FOLDER'])
+                        message = f"Downloaded and loaded {count} rows into '{table}'. Columns: {cols}"
+                    except Exception as e:
+                        message = f"Error ingesting from URL: {str(e)}"
+                else:
+                    message = "Please provide a valid URL."
 
         mock_api = mock_datagov_api('hdb-resale')
         tables = get_all_tables()
