@@ -73,6 +73,54 @@
     </form>
 </div>
 
+<div class="two-col">
+    <div class="card">
+        <div class="card-header"><h3>🕸️ Scrape HTML Tables</h3></div>
+        <form method="POST">
+            <input type="hidden" name="action" value="scrape_table">
+            <div class="concept-body">
+                <p>Extract tabular data from any web page containing HTML tables (e.g., Wikipedia, government sites).</p>
+                <div class="form-group">
+                    <label>Web Page URL</label>
+                    <input type="url" name="scrape_url" class="form-control" placeholder="https://en.wikipedia.org/wiki/Singapore" required>
+                </div>
+                <div class="form-group">
+                    <label>Table Index (0 = first table on page)</label>
+                    <input type="number" name="scrape_table_index" class="form-control" value="0" min="0" max="20">
+                </div>
+                <div class="form-group">
+                    <label>Target Table Name</label>
+                    <input type="text" name="scrape_table_name" class="form-control" placeholder="e.g., scraped_data" value="scraped_data">
+                </div>
+                <button type="submit" class="btn btn-success">🕸️ Scrape & Load</button>
+                <button type="button" class="btn btn-primary" onclick="previewTables()" style="margin-left: 8px;">🔍 Preview Tables</button>
+                <div id="scrape-preview" style="margin-top: 15px;"></div>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>🔌 Scrape JSON API</h3></div>
+        <form method="POST">
+            <input type="hidden" name="action" value="scrape_api">
+            <div class="concept-body">
+                <p>Fetch data from a REST API returning JSON and load it into the database.</p>
+                <div class="form-group">
+                    <label>API Endpoint URL</label>
+                    <input type="url" name="api_scrape_url" class="form-control" placeholder="https://data.gov.sg/api/action/datastore_search?resource_id=..." required>
+                </div>
+                <div class="form-group">
+                    <label>Target Table Name</label>
+                    <input type="text" name="api_table_name" class="form-control" placeholder="e.g., api_data" value="api_data">
+                </div>
+                <button type="submit" class="btn btn-success">🔌 Fetch & Load</button>
+                <button type="button" class="btn btn-primary" onclick="previewApi()" style="margin-left: 8px;">🔍 Preview Data</button>
+                <div id="api-preview" style="margin-top: 15px;"></div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header"><h3>🌐 Mock API — data.gov.sg</h3></div>
     <div class="concept-body">
@@ -139,6 +187,80 @@ def ingest_csv_to_table(csv_path, table_name):
     <h5>🧪 Try It Yourself</h5>
     <p>1. Download data from <a href="https://data.gov.sg" target="_blank" style="color: var(--mrt-blue);">data.gov.sg</a> — try the "Resale Flat Prices" dataset.</p>
     <p>2. Upload the CSV file using the form above.</p>
-    <p>3. Navigate to the SQL module and query your uploaded data.</p>
+    <p>3. Use the Web Scraping tools to extract tables from Wikipedia or government sites.</p>
+    <p>4. Navigate to the SQL module and query your uploaded data.</p>
 </div>
+
+<script>
+function previewTables() {
+    const url = document.querySelector('input[name="scrape_url"]').value.trim();
+    const preview = document.getElementById('scrape-preview');
+    if (!url) { preview.innerHTML = '<p style="color: red;">Please enter a URL</p>'; return; }
+    preview.innerHTML = '<p>🔄 Scanning for tables...</p>';
+    fetch('/api/scrape/tables', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: url})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'ok' && data.tables && data.tables.length > 0) {
+            let html = `<p><strong>Found ${data.tables_found} table(s)</strong> on ${data.domain}</p>`;
+            data.tables.forEach(t => {
+                html += `<div style="border:1px solid var(--border); padding:8px; margin:6px 0; border-radius:6px;">`;
+                html += `<strong>Table #${t.index}</strong> — ${t.rows} rows, ${t.columns.length} cols: <code>${t.columns.join(', ')}</code>`;
+                if (t.preview && t.preview.length > 0) {
+                    html += '<table class="table table-striped" style="margin-top:8px; font-size:0.85em;">';
+                    html += '<tr>' + Object.keys(t.preview[0]).map(k => `<th>${k}</th>`).join('') + '</tr>';
+                    t.preview.slice(0, 3).forEach(row => {
+                        html += '<tr>' + Object.values(row).map(v => `<td>${v !== null ? v : ''}</td>`).join('') + '</tr>';
+                    });
+                    html += '</table>';
+                }
+                html += '</div>';
+            });
+            preview.innerHTML = html;
+        } else {
+            preview.innerHTML = `<p style="color: orange;">${data.message || 'No tables found on this page.'}</p>`;
+        }
+    })
+    .catch(err => { preview.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`; });
+}
+
+function previewApi() {
+    const url = document.querySelector('input[name="api_scrape_url"]').value.trim();
+    const preview = document.getElementById('api-preview');
+    if (!url) { preview.innerHTML = '<p style="color: red;">Please enter an API URL</p>'; return; }
+    preview.innerHTML = '<p>🔄 Fetching API data...</p>';
+    fetch('/api/scrape/api', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: url})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            let html = '';
+            if (data.format === 'tabular') {
+                html = `<p><strong>${data.rows} records</strong> — Columns: <code>${data.columns.join(', ')}</code></p>`;
+                if (data.preview && data.preview.length > 0) {
+                    html += '<table class="table table-striped" style="font-size:0.85em;">';
+                    html += '<tr>' + Object.keys(data.preview[0]).map(k => `<th>${k}</th>`).join('') + '</tr>';
+                    data.preview.slice(0, 3).forEach(row => {
+                        html += '<tr>' + Object.values(row).map(v => `<td>${v !== null ? v : ''}</td>`).join('') + '</tr>';
+                    });
+                    html += '</table>';
+                }
+            } else {
+                html = `<p>Non-tabular response. Keys: <code>${JSON.stringify(data.raw_keys)}</code></p>`;
+                html += `<pre style="max-height:150px; overflow:auto;">${data.preview}</pre>`;
+            }
+            preview.innerHTML = html;
+        } else {
+            preview.innerHTML = `<p style="color: red;">${data.message || 'Error fetching API'}</p>`;
+        }
+    })
+    .catch(err => { preview.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`; });
+}
+</script>
 {% endblock %}

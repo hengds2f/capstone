@@ -26,6 +26,10 @@ from services.dagster_pipeline import (
     run_dagster_job, run_all_dagster_jobs, run_dagster_assets,
     get_dagster_asset_info, get_dagster_schedules, get_dagster_sensors
 )
+from services.scraping import (
+    scrape_html_tables, scrape_and_load_table, scrape_page_links,
+    scrape_api_json, scrape_api_and_load
+)
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -580,5 +584,86 @@ def api_dagster_sensors():
     try:
         sensors = get_dagster_sensors()
         return jsonify({'status': 'ok', 'sensors': sensors})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ===================== SCRAPING ENDPOINTS =====================
+
+@api_bp.route('/scrape/tables', methods=['POST'])
+def api_scrape_tables():
+    """Preview HTML tables from a URL."""
+    try:
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        table_index = data.get('table_index')
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+        if table_index is not None:
+            table_index = int(table_index)
+        result = scrape_html_tables(url, table_index=table_index)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/scrape/tables/load', methods=['POST'])
+def api_scrape_tables_load():
+    """Scrape an HTML table and load into the database."""
+    try:
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        table_index = data.get('table_index', 0)
+        table_name = data.get('table_name', 'scraped_data')
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+        result = scrape_and_load_table(url, int(table_index), table_name)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/scrape/links', methods=['POST'])
+def api_scrape_links():
+    """Discover links on a page."""
+    try:
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        pattern = data.get('pattern')
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+        result = scrape_page_links(url, pattern=pattern)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/scrape/api', methods=['POST'])
+def api_scrape_api():
+    """Preview data from a JSON API."""
+    try:
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        params = data.get('params')
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+        result = scrape_api_json(url, params=params)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/scrape/api/load', methods=['POST'])
+def api_scrape_api_load():
+    """Fetch JSON API data and load into the database."""
+    try:
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        table_name = data.get('table_name', 'api_data')
+        params = data.get('params')
+        if not url:
+            return jsonify({'status': 'error', 'message': 'URL is required'}), 400
+        result = scrape_api_and_load(url, table_name, params=params)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500

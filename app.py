@@ -12,6 +12,7 @@ from services.ingestion import (
     ingest_school_data, ingest_energy_data, ingest_feedback_data,
     mock_datagov_api, validate_dataframe, ingest_csv_to_table, ingest_from_url
 )
+from services.scraping import scrape_html_tables, scrape_and_load_table, scrape_api_json, scrape_api_and_load
 from services.pipeline import build_full_pipeline, get_pipeline_history
 from services.validation import run_all_validations
 from services.streaming import generate_event_batch, ingest_events, process_window, get_stream_stats
@@ -128,6 +129,29 @@ def create_app():
                         message = f"Error ingesting from URL: {str(e)}"
                 else:
                     message = "Please provide a valid URL."
+            elif action == 'scrape_table':
+                url = request.form.get('scrape_url', '').strip()
+                table_index = int(request.form.get('scrape_table_index', 0))
+                table_name = request.form.get('scrape_table_name', 'scraped_data').strip()
+                if url:
+                    try:
+                        result = scrape_and_load_table(url, table_index, table_name)
+                        message = f"Scraped and loaded {result['rows_loaded']} rows into '{table_name}' from table #{table_index}. Columns: {result['columns']}"
+                    except Exception as e:
+                        message = f"Error scraping table: {str(e)}"
+                else:
+                    message = "Please provide a URL to scrape."
+            elif action == 'scrape_api':
+                url = request.form.get('api_scrape_url', '').strip()
+                table_name = request.form.get('api_table_name', 'api_data').strip()
+                if url:
+                    try:
+                        result = scrape_api_and_load(url, table_name)
+                        message = f"Fetched API data and loaded {result['rows_loaded']} rows into '{table_name}'. Columns: {result['columns']}"
+                    except Exception as e:
+                        message = f"Error scraping API: {str(e)}"
+                else:
+                    message = "Please provide an API URL."
 
         mock_api = mock_datagov_api('hdb-resale')
         tables = get_all_tables()
