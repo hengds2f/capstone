@@ -17,6 +17,15 @@ from services.pipeline import build_full_pipeline, get_pipeline_history
 from services.streaming import generate_event_batch, ingest_events, process_window, get_stream_stats
 from services.validation import run_all_validations
 from services.ingestion import ingest_csv_to_table, ingest_from_url
+from services.meltano_elt import (
+    build_hdb_elt_pipeline, build_transport_elt_pipeline,
+    build_energy_elt_pipeline, build_custom_elt_pipeline,
+    run_full_meltano_elt
+)
+from services.dagster_pipeline import (
+    run_dagster_job, run_all_dagster_jobs, run_dagster_assets,
+    get_dagster_asset_info, get_dagster_schedules, get_dagster_sensors
+)
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -446,5 +455,130 @@ def api_ingest_url():
             'table_name': table_name,
             'source_url': url
         })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/meltano/run', methods=['POST'])
+def api_meltano_run():
+    """Run a Meltano ELT pipeline (hdb, transport, energy, or full)."""
+    start = datetime.now()
+    try:
+        data = request.get_json() or {}
+        pipeline_name = data.get('pipeline', 'full')
+
+        builders = {
+            'hdb': build_hdb_elt_pipeline,
+            'transport': build_transport_elt_pipeline,
+            'energy': build_energy_elt_pipeline,
+        }
+
+        if pipeline_name == 'full':
+            result = run_full_meltano_elt()
+        elif pipeline_name in builders:
+            pipeline = builders[pipeline_name]()
+            result = pipeline.run()
+        else:
+            return jsonify({'status': 'error', 'message': f'Unknown pipeline: {pipeline_name}'}), 400
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/meltano/run', 'POST', 200, elapsed)
+        return jsonify({'status': 'ok', 'result': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e), 'trace': traceback.format_exc()}), 500
+
+
+@api_bp.route('/meltano/custom', methods=['POST'])
+def api_meltano_custom():
+    """Run a custom Meltano ELT pipeline with user-defined source and transforms."""
+    start = datetime.now()
+    try:
+        data = request.get_json() or {}
+        source_file = data.get('source_file', '')
+        table_name = data.get('table_name', 'raw_custom_elt')
+        transforms = data.get('transforms', [])
+
+        if not source_file:
+            return jsonify({'status': 'error', 'message': 'source_file is required'}), 400
+
+        # Resolve source path safely within data directory
+        from config import Config
+        source_path = os.path.join(Config.DATA_DIR, os.path.basename(source_file))
+        if not os.path.isfile(source_path):
+            return jsonify({'status': 'error', 'message': f'File not found: {source_file}'}), 404
+
+        pipeline = build_custom_elt_pipeline(source_path, table_name, 'csv', transforms)
+        result = pipeline.run()
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/meltano/custom', 'POST', 200, elapsed)
+        return jsonify({'status': 'ok', 'result': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e), 'trace': traceback.format_exc()}), 500
+
+
+@api_bp.route('/dagster/job/run', methods=['POST'])
+def api_dagster_job_run():
+    """Run a Dagster job (hdb, transport, energy, or all)."""
+    start = datetime.now()
+    try:
+        data = request.get_json() or {}
+        job_name = data.get('job', 'all')
+
+        if job_name == 'all':
+            result = run_all_dagster_jobs()
+        else:
+            result = run_dagster_job(job_name)
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/dagster/job/run', 'POST', 200, elapsed)
+        return jsonify({'status': 'ok', 'result': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e), 'trace': traceback.format_exc()}), 500
+
+
+@api_bp.route('/dagster/assets/materialize', methods=['POST'])
+def api_dagster_assets_materialize():
+    """Materialize Dagster software-defined assets (all or a specific one)."""
+    start = datetime.now()
+    try:
+        data = request.get_json() or {}
+        asset_key = data.get('asset_key')  # None = materialize all
+
+        result = run_dagster_assets(asset_key)
+
+        elapsed = (datetime.now() - start).total_seconds() * 1000
+        log_api_call('/api/dagster/assets/materialize', 'POST', 200, elapsed)
+        return jsonify({'status': 'ok', 'result': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e), 'trace': traceback.format_exc()}), 500
+
+
+@api_bp.route('/dagster/assets', methods=['GET'])
+def api_dagster_assets_info():
+    """Get metadata about all defined Dagster assets."""
+    try:
+        info = get_dagster_asset_info()
+        return jsonify({'status': 'ok', 'assets': info})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/dagster/schedules', methods=['GET'])
+def api_dagster_schedules():
+    """Get all Dagster schedule definitions."""
+    try:
+        schedules = get_dagster_schedules()
+        return jsonify({'status': 'ok', 'schedules': schedules})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@api_bp.route('/dagster/sensors', methods=['GET'])
+def api_dagster_sensors():
+    """Get all Dagster sensor definitions."""
+    try:
+        sensors = get_dagster_sensors()
+        return jsonify({'status': 'ok', 'sensors': sensors})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500

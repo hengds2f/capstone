@@ -93,6 +93,374 @@ def ingest_upsert(df, table, key_col):
     <p>3. What happens if the "validate" step fails? How would you handle partial failures?</p>
 </div>
 
+<!-- ============================================================ -->
+<!-- DAGSTER ORCHESTRATION SECTION -->
+<!-- ============================================================ -->
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🏗️ Dagster Orchestration</h3></div>
+    <div class="concept-body">
+        <p><strong>Dagster</strong> is a modern data orchestrator built around <strong>Software-Defined Assets</strong>. Instead of defining "tasks that run in order," you declare <em>what data should exist</em> and Dagster figures out how to compute it.</p>
+
+        <h4>🆚 Dagster vs Airflow vs Meltano</h4>
+        <table class="table table-striped">
+            <tr><th>Feature</th><th>Airflow</th><th>Meltano</th><th>Dagster</th></tr>
+            <tr><td>Core unit</td><td>Task (operator)</td><td>Plugin (tap/target)</td><td>Asset / Op</td></tr>
+            <tr><td>DAG definition</td><td>Imperative Python</td><td>YAML config</td><td>Declarative assets</td></tr>
+            <tr><td>Data awareness</td><td>❌ No</td><td>Singer schema</td><td>✅ Full lineage</td></tr>
+            <tr><td>Testing</td><td>Integration only</td><td>Singer spec</td><td>Unit testable ops</td></tr>
+            <tr><td>IO management</td><td>XCom (limited)</td><td>Singer protocol</td><td>IO Managers</td></tr>
+            <tr><td>Type system</td><td>None</td><td>JSON Schema</td><td>Dagster Types</td></tr>
+            <tr><td>UI</td><td>Webserver</td><td>CLI</td><td>Dagit (rich UI)</td></tr>
+        </table>
+
+        <h4>🔑 Key Dagster Concepts</h4>
+        <ul>
+            <li><strong>@asset</strong> — A software-defined asset. Declare what data should exist; Dagster infers the DAG.</li>
+            <li><strong>@op</strong> — A single computation unit (like an Airflow operator).</li>
+            <li><strong>@graph / @job</strong> — A DAG of ops that can be executed together.</li>
+            <li><strong>Resources</strong> — Shared services (DB connections, API clients) injected into ops.</li>
+            <li><strong>IO Managers</strong> — Handle reading/writing between ops (e.g., SQLite, S3, Parquet).</li>
+            <li><strong>Schedules</strong> — Cron-based triggers for jobs.</li>
+            <li><strong>Sensors</strong> — Event-driven triggers (e.g., new file detected).</li>
+        </ul>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>⚡ Run Dagster Jobs</h3></div>
+    <div class="concept-body">
+        <p>Execute Dagster jobs with ops organized in a dependency DAG. Each op runs with retry policy, logging, and resource injection.</p>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="runDagsterJob('hdb')">🏠 HDB Job</button>
+            <button class="btn btn-primary" onclick="runDagsterJob('transport')">🚇 Transport Job</button>
+            <button class="btn btn-primary" onclick="runDagsterJob('energy')">⚡ Energy Job</button>
+            <button class="btn btn-success" onclick="runDagsterJob('all')">🚀 Run All Jobs</button>
+        </div>
+
+        <div id="dagster-job-output" class="output-box" style="min-height: 120px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📦 Software-Defined Assets</h3></div>
+    <div class="concept-body">
+        <p>Assets represent the DATA itself. Dagster infers the execution graph from asset dependencies. Click below to materialize assets.</p>
+
+        <div class="code-block"><span class="lang-label">Concept</span><pre>Asset Dependency Graph:
+
+  raw_hdb_resale ────▶ dagster_asset_hdb_stats ──────┐
+                                                      ├──▶ dagster_asset_urban_index
+  raw_transport ─────▶ dagster_asset_transport_summary┘
+
+  raw_energy ────────▶ dagster_asset_energy_trends
+
+  raw_population (independent)</pre></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="materializeAssets()">📦 Materialize All Assets</button>
+            <button class="btn btn-secondary" onclick="materializeAssets('raw_hdb_resale')">Raw HDB</button>
+            <button class="btn btn-secondary" onclick="materializeAssets('dagster_asset_hdb_stats')">HDB Stats</button>
+            <button class="btn btn-secondary" onclick="materializeAssets('dagster_asset_urban_index')">Urban Index</button>
+            <button class="btn btn-secondary" onclick="loadAssetInfo()">📋 View Asset Catalog</button>
+        </div>
+
+        <div id="dagster-asset-output" class="output-box" style="min-height: 120px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>⏰ Schedules & Sensors</h3></div>
+    <div class="concept-body">
+        <p><strong>Schedules</strong> trigger jobs on a cron cadence. <strong>Sensors</strong> poll for conditions (e.g., new file uploaded) and trigger jobs when conditions are met.</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="btn btn-secondary" onclick="loadSchedules()">📅 View Schedules</button>
+            <button class="btn btn-secondary" onclick="loadSensors()">📡 View Sensors</button>
+        </div>
+        <div id="dagster-schedules-output" class="output-box" style="min-height: 80px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Dagster Code Patterns</h3></div>
+    <div class="concept-body">
+        <h4>Software-Defined Assets</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import asset, AssetIn
+
+@asset(group_name="raw")
+def raw_hdb_resale():
+    """Extract raw HDB data from CSV."""
+    return pd.read_csv("data/hdb_resale.csv")
+
+@asset(
+    ins={"raw_hdb": AssetIn(key="raw_hdb_resale")},
+    group_name="staging"
+)
+def hdb_price_stats(raw_hdb):
+    """Compute price statistics per town."""
+    return raw_hdb.groupby("town").agg(
+        avg_price=("resale_price", "mean"),
+        count=("resale_price", "count")
+    ).reset_index()
+
+# Dagster infers: raw_hdb_resale → hdb_price_stats</pre></div>
+
+        <h4>Ops, Graphs, and Jobs</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import op, graph, job, In, Out
+
+@op(out=Out(io_manager_key="sqlite_io"))
+def extract_csv(context):
+    df = pd.read_csv("data/hdb_resale.csv")
+    context.log.info(f"Extracted {len(df)} rows")
+    return df
+
+@op(ins={"df": In()}, out=Out(io_manager_key="sqlite_io"))
+def transform_stats(context, df):
+    result = df.groupby("town")["resale_price"].mean().reset_index()
+    context.log.info(f"Transformed: {len(result)} towns")
+    return result
+
+@op
+def validate(context, df):
+    assert len(df) > 0, "Empty DataFrame!"
+    context.log.info("Validation passed ✅")
+
+@graph
+def hdb_pipeline():
+    raw = extract_csv()
+    stats = transform_stats(raw)
+    validate(stats)
+
+# Convert to a runnable job with resources
+hdb_job = hdb_pipeline.to_job(
+    resource_defs={"sqlite_io": sqlite_io_manager}
+)</pre></div>
+
+        <h4>Resources & IO Managers</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import IOManager, io_manager, resource
+import sqlite3
+
+class SQLiteIOManager(IOManager):
+    def __init__(self, db_path):
+        self.db_path = db_path
+
+    def handle_output(self, context, obj):
+        table = context.asset_key.path[-1]
+        conn = sqlite3.connect(self.db_path)
+        obj.to_sql(table, conn, if_exists="replace", index=False)
+        conn.close()
+
+    def load_input(self, context):
+        table = context.asset_key.path[-1]
+        conn = sqlite3.connect(self.db_path)
+        return pd.read_sql(f"SELECT * FROM {table}", conn)
+
+@io_manager(config_schema={"db_path": str})
+def sqlite_io_manager(context):
+    return SQLiteIOManager(context.resource_config["db_path"])
+
+# Usage in Definitions
+from dagster import Definitions
+defs = Definitions(
+    assets=[raw_hdb_resale, hdb_price_stats],
+    resources={"io_manager": sqlite_io_manager.configured(
+        {"db_path": "database/singapore_data.db"}
+    )}
+)</pre></div>
+
+        <h4>Schedules & Sensors</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>from dagster import schedule, sensor, RunRequest, SkipReason
+
+@schedule(cron_schedule="0 0 * * *", job=hdb_job)
+def daily_hdb_schedule(context):
+    return RunRequest(run_key=f"hdb-{context.scheduled_execution_time}")
+
+@sensor(job=hdb_job, minimum_interval_seconds=60)
+def new_csv_sensor(context):
+    new_files = check_for_new_uploads()
+    if new_files:
+        yield RunRequest(
+            run_key=f"upload-{new_files[0]}",
+            run_config={"ops": {"extract": {"config": {"file": new_files[0]}}}}
+        )
+    else:
+        yield SkipReason("No new files detected")</pre></div>
+    </div>
+</div>
+
+<div class="mistakes-box">
+    <h5>⚠️ Common Dagster Mistakes</h5>
+    <ul>
+        <li><strong>Using ops when assets suffice:</strong> Most pipelines should use @asset. Only use @op for complex multi-output logic.</li>
+        <li><strong>Hardcoding resources:</strong> Use resource injection so ops can be tested with mock resources.</li>
+        <li><strong>Ignoring IO Managers:</strong> Let Dagster handle persistence — don't read/write files directly in ops.</li>
+        <li><strong>No partition scheme:</strong> For time-series data, use partitioned assets for incremental processing.</li>
+        <li><strong>Monolithic ops:</strong> Break large ops into smaller, testable units. Each op should do one thing.</li>
+    </ul>
+</div>
+
+<!-- ============================================================ -->
+<!-- MELTANO ELT SECTION -->
+<!-- ============================================================ -->
+
+<div class="concept-section">
+    <div class="concept-header"><h3>🔧 Meltano ELT Pipeline</h3></div>
+    <div class="concept-body">
+        <p><strong>Meltano</strong> is an open-source DataOps platform for the modern data stack. It follows the <strong>ELT</strong> pattern (Extract → Load → Transform) using the <a href="https://www.singer.io/" target="_blank">Singer protocol</a> for taps (extractors) and targets (loaders), with <strong>dbt</strong> for transformations.</p>
+
+        <h4>🆚 ETL vs ELT</h4>
+        <table class="table table-striped">
+            <tr><th>Aspect</th><th>ETL (Traditional)</th><th>ELT (Modern / Meltano)</th></tr>
+            <tr><td>Transform timing</td><td>Before loading</td><td>After loading (in-warehouse)</td></tr>
+            <tr><td>Data stored</td><td>Only transformed data</td><td>Raw + transformed data</td></tr>
+            <tr><td>Flexibility</td><td>Fixed schema upfront</td><td>Schema-on-read, iterate fast</td></tr>
+            <tr><td>Tools</td><td>Informatica, SSIS, Talend</td><td>Meltano, Airbyte, Fivetran + dbt</td></tr>
+        </table>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>⚡ Run Meltano ELT</h3></div>
+    <div class="concept-body">
+        <p>Execute ELT pipelines that extract from CSV sources, load raw data into SQLite, then run dbt-style SQL transforms to create staging/analytics tables.</p>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="runMeltanoELT('hdb')">🏠 HDB ELT</button>
+            <button class="btn btn-primary" onclick="runMeltanoELT('transport')">🚇 Transport ELT</button>
+            <button class="btn btn-primary" onclick="runMeltanoELT('energy')">⚡ Energy ELT</button>
+            <button class="btn btn-success" onclick="runMeltanoELT('full')">🚀 Run All ELT</button>
+        </div>
+
+        <div id="meltano-output" class="output-box" style="min-height: 120px;"></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Meltano Configuration (meltano.yml)</h3></div>
+    <div class="concept-body">
+        <div class="code-block"><span class="lang-label">YAML</span><pre>version: 1
+default_environment: dev
+
+plugins:
+  extractors:
+    - name: tap-csv          # Singer tap for CSV files
+      pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+
+  loaders:
+    - name: target-sqlite    # Singer target for SQLite
+      pip_url: target-sqlite~=0.1
+      config:
+        database: database/singapore_data.db
+
+  transformers:
+    - name: dbt-sqlite       # dbt for SQL transformations
+      pip_url: dbt-core dbt-sqlite
+
+jobs:
+  - name: hdb-elt
+    tasks:
+      - tap-csv target-sqlite   # Extract & Load
+      - dbt-sqlite:run          # Transform
+
+schedules:
+  - name: daily-hdb-sync
+    interval: "@daily"
+    job: hdb-elt</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Singer Protocol & Meltano Architecture</h3></div>
+    <div class="concept-body">
+        <h4>Singer Messages</h4>
+        <div class="code-block"><span class="lang-label">JSON</span><pre>// SCHEMA message — declares the stream's schema
+{"type": "SCHEMA", "stream": "hdb_resale",
+ "schema": {"properties": {"town": {"type": "string"}, "resale_price": {"type": "number"}}}}
+
+// RECORD message — a single data record
+{"type": "RECORD", "stream": "hdb_resale",
+ "record": {"town": "ANG MO KIO", "resale_price": 450000}}
+
+// STATE message — checkpoint for incremental extraction
+{"type": "STATE", "value": {"bookmarks": {"hdb_resale": {"last_extracted": "2024-01-15"}}}}</pre></div>
+
+        <h4>ELT Pipeline Flow</h4>
+        <div class="code-block"><span class="lang-label">Concept</span><pre>┌─────────────┐    Singer     ┌──────────────┐    SQL     ┌──────────────┐
+│  Extractor   │  messages    │    Loader     │  models   │  Transformer │
+│  (tap-csv)   │ ──────────▶  │(target-sqlite)│ ────────▶ │  (dbt-sqlite) │
+│              │  RECORD,     │              │           │              │
+│  CSV / API   │  STATE       │   SQLite DB   │           │  Staging &   │
+│  JSON / Excel│              │   (raw data)  │           │  Analytics   │
+└─────────────┘              └──────────────┘           └──────────────┘</pre></div>
+
+        <h4>How This App Implements It</h4>
+        <div class="code-block"><span class="lang-label">Python</span><pre>from services.meltano_elt import MeltanoELTPipeline
+
+# 1. Configure the pipeline
+pipeline = MeltanoELTPipeline('hdb_elt')
+pipeline.configure_extract('data/hdb_resale.csv', 'csv')
+pipeline.configure_load('raw_hdb_resale')
+
+# 2. Add dbt-style SQL transforms
+pipeline.add_transform('stg_hdb_monthly_avg', """
+    CREATE TABLE IF NOT EXISTS stg_hdb_monthly_avg AS
+    SELECT month, town, flat_type,
+           COUNT(*) as transaction_count,
+           ROUND(AVG(resale_price), 2) as avg_price
+    FROM raw_hdb_resale
+    GROUP BY month, town, flat_type
+""")
+
+# 3. Run the full ELT
+result = pipeline.run()
+# result['steps'] → {'extract': {...}, 'load': {...}, 'transform': {...}}</pre></div>
+    </div>
+</div>
+
+<div class="concept-section">
+    <div class="concept-header"><h3>📖 Custom ELT Pipeline</h3></div>
+    <div class="concept-body">
+        <p>Build a custom ELT pipeline from any CSV file already in the system.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div class="form-group">
+                <label>Source File (from data/ folder)</label>
+                <select id="elt-source" class="form-control">
+                    <option value="hdb_resale.csv">hdb_resale.csv</option>
+                    <option value="transport_usage.csv">transport_usage.csv</option>
+                    <option value="population.csv">population.csv</option>
+                    <option value="schools.csv">schools.csv</option>
+                    <option value="energy.csv">energy.csv</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Target Table Name</label>
+                <input type="text" id="elt-table" class="form-control" value="raw_custom_elt">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Transform SQL (optional — creates a staging table)</label>
+            <textarea id="elt-transform-sql" class="form-control" rows="4" placeholder="CREATE TABLE IF NOT EXISTS stg_my_model AS SELECT ... FROM raw_custom_elt GROUP BY ..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>Transform Name (required if SQL provided)</label>
+            <input type="text" id="elt-transform-name" class="form-control" placeholder="stg_my_model">
+        </div>
+        <button class="btn btn-primary" onclick="runCustomELT()">▶️ Run Custom ELT</button>
+        <div id="custom-elt-output" class="output-box" style="margin-top: 15px; min-height: 80px;"></div>
+    </div>
+</div>
+
+<div class="mistakes-box">
+    <h5>⚠️ Common ELT Mistakes</h5>
+    <ul>
+        <li><strong>Transforming before loading:</strong> ELT loads raw data first — don't filter or clean during extraction</li>
+        <li><strong>Not using incremental loads:</strong> Full refreshes are expensive; use STATE bookmarks for incremental extraction</li>
+        <li><strong>Skipping data validation:</strong> Raw data in the warehouse still needs quality checks (use great_expectations or dbt tests)</li>
+        <li><strong>Monolithic transforms:</strong> Break dbt models into staging → intermediate → marts layers</li>
+    </ul>
+</div>
+
 <script>
 function loadPipelineHistory() {
     apiCall('/api/pipeline/history', 'GET').then(data => {
@@ -108,6 +476,236 @@ function loadPipelineHistory() {
                     <td>${row.started_at || '-'}</td>`;
                 tbody.appendChild(tr);
             });
+        }
+    });
+}
+
+function runMeltanoELT(pipeline) {
+    const outputDiv = document.getElementById('meltano-output');
+    outputDiv.innerHTML = '<p>⏳ Running Meltano ELT pipeline...</p>';
+
+    apiCall('/api/meltano/run', 'POST', { pipeline: pipeline }).then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>✅ ELT Pipeline Results</h4>';
+            const result = data.result;
+
+            if (result.steps) {
+                // Single pipeline result
+                html += formatELTResult(pipeline, result);
+            } else {
+                // Multiple pipeline results
+                for (const [name, res] of Object.entries(result)) {
+                    html += `<h5 style="margin-top:10px;">${name.toUpperCase()}</h5>`;
+                    html += formatELTResult(name, res);
+                }
+            }
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    }).catch(err => {
+        outputDiv.innerHTML = `<p style="color:red;">❌ Error: ${err}</p>`;
+    });
+}
+
+function formatELTResult(name, result) {
+    let html = '<table class="table table-striped"><tr><th>Step</th><th>Status</th><th>Details</th></tr>';
+    if (result.steps) {
+        for (const [step, info] of Object.entries(result.steps)) {
+            const statusClass = info.status === 'completed' ? 'status-success' : 'status-error';
+            let details = '';
+            if (step === 'extract') details = `${info.records || 0} records`;
+            else if (step === 'load') details = `${info.rows_loaded || 0} rows → ${info.table || ''}`;
+            else if (step === 'transform') {
+                if (info.models) {
+                    details = Object.entries(info.models).map(([m, r]) =>
+                        `${m}: ${r.status} (${r.rows || 0} rows)`).join(', ');
+                }
+            }
+            html += `<tr><td>${step}</td><td><span class="${statusClass}">${info.status}</span></td><td>${details}</td></tr>`;
+        }
+    }
+    html += '</table>';
+    return html;
+}
+
+function runCustomELT() {
+    const outputDiv = document.getElementById('custom-elt-output');
+    outputDiv.innerHTML = '<p>⏳ Running custom ELT...</p>';
+
+    const source = document.getElementById('elt-source').value;
+    const table = document.getElementById('elt-table').value || 'raw_custom_elt';
+    const transformSql = document.getElementById('elt-transform-sql').value.trim();
+    const transformName = document.getElementById('elt-transform-name').value.trim();
+
+    const payload = { source_file: source, table_name: table };
+    if (transformSql && transformName) {
+        payload.transforms = [{ name: transformName, sql: transformSql }];
+    }
+
+    apiCall('/api/meltano/custom', 'POST', payload).then(data => {
+        if (data.status === 'ok') {
+            outputDiv.innerHTML = formatELTResult('custom', data.result);
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    }).catch(err => {
+        outputDiv.innerHTML = `<p style="color:red;">❌ Error: ${err}</p>`;
+    });
+}
+
+// ============================================================
+// DAGSTER FUNCTIONS
+// ============================================================
+
+function runDagsterJob(jobName) {
+    const outputDiv = document.getElementById('dagster-job-output');
+    outputDiv.innerHTML = '<p>⏳ Running Dagster job...</p>';
+
+    apiCall('/api/dagster/job/run', 'POST', { job: jobName }).then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>✅ Dagster Job Results</h4>';
+            const result = data.result;
+
+            if (result.ops) {
+                html += formatDagsterJobResult(jobName, result);
+            } else {
+                for (const [name, res] of Object.entries(result)) {
+                    html += `<h5 style="margin-top:10px;">📋 ${name.toUpperCase()} (${res.status})</h5>`;
+                    html += formatDagsterJobResult(name, res);
+                }
+            }
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    }).catch(err => {
+        outputDiv.innerHTML = `<p style="color:red;">❌ Error: ${err}</p>`;
+    });
+}
+
+function formatDagsterJobResult(name, result) {
+    let html = `<p><strong>Run ID:</strong> ${result.run_id || '-'} | <strong>Status:</strong> ${result.status || '-'}</p>`;
+    html += '<table class="table table-striped"><tr><th>Op</th><th>Status</th><th>Duration</th><th>Rows</th><th>Attempts</th></tr>';
+    if (result.ops) {
+        for (const [op, info] of Object.entries(result.ops)) {
+            const statusClass = info.status === 'completed' ? 'status-success' :
+                               info.status === 'skipped' ? 'status-warning' : 'status-error';
+            html += `<tr>
+                <td>${op}</td>
+                <td><span class="${statusClass}">${info.status}</span></td>
+                <td>${info.duration ? info.duration.toFixed(3) + 's' : '-'}</td>
+                <td>${info.rows || 0}</td>
+                <td>${info.attempt || 1}</td>
+            </tr>`;
+        }
+    }
+    html += '</table>';
+    return html;
+}
+
+function materializeAssets(assetKey) {
+    const outputDiv = document.getElementById('dagster-asset-output');
+    outputDiv.innerHTML = '<p>⏳ Materializing assets...</p>';
+
+    const payload = assetKey ? { asset_key: assetKey } : {};
+
+    apiCall('/api/dagster/assets/materialize', 'POST', payload).then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>📦 Asset Materialization Results</h4>';
+            html += '<table class="table table-striped"><tr><th>Asset</th><th>Status</th><th>Duration</th><th>Rows</th></tr>';
+            for (const [key, info] of Object.entries(data.result)) {
+                const statusClass = info.status === 'completed' ? 'status-success' : 'status-error';
+                const rows = info.materialization ? info.materialization.metadata.row_count : (info.row_count || 0);
+                html += `<tr>
+                    <td>${key}</td>
+                    <td><span class="${statusClass}">${info.status}</span></td>
+                    <td>${info.duration ? info.duration.toFixed(3) + 's' : '-'}</td>
+                    <td>${rows}</td>
+                </tr>`;
+            }
+            html += '</table>';
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    }).catch(err => {
+        outputDiv.innerHTML = `<p style="color:red;">❌ Error: ${err}</p>`;
+    });
+}
+
+function loadAssetInfo() {
+    const outputDiv = document.getElementById('dagster-asset-output');
+    outputDiv.innerHTML = '<p>⏳ Loading asset catalog...</p>';
+
+    apiCall('/api/dagster/assets', 'GET').then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>📋 Asset Catalog</h4>';
+            html += '<table class="table table-striped"><tr><th>Asset Key</th><th>Group</th><th>Dependencies</th><th>Description</th></tr>';
+            for (const [key, info] of Object.entries(data.assets)) {
+                html += `<tr>
+                    <td><strong>${key}</strong></td>
+                    <td><span class="badge">${info.group}</span></td>
+                    <td>${info.deps.length ? info.deps.join(', ') : '<em>none</em>'}</td>
+                    <td>${info.description}</td>
+                </tr>`;
+            }
+            html += '</table>';
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    }).catch(err => {
+        outputDiv.innerHTML = `<p style="color:red;">❌ Error: ${err}</p>`;
+    });
+}
+
+function loadSchedules() {
+    const outputDiv = document.getElementById('dagster-schedules-output');
+    outputDiv.innerHTML = '<p>⏳ Loading schedules...</p>';
+
+    apiCall('/api/dagster/schedules', 'GET').then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>📅 Schedules</h4>';
+            html += '<table class="table table-striped"><tr><th>Name</th><th>Cron</th><th>Job</th><th>Next Run</th><th>Description</th></tr>';
+            for (const s of data.schedules) {
+                html += `<tr>
+                    <td>${s.name}</td>
+                    <td><code>${s.cron}</code></td>
+                    <td>${s.job}</td>
+                    <td>${s.next_run ? new Date(s.next_run).toLocaleString() : '-'}</td>
+                    <td>${s.description}</td>
+                </tr>`;
+            }
+            html += '</table>';
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
+        }
+    });
+}
+
+function loadSensors() {
+    const outputDiv = document.getElementById('dagster-schedules-output');
+    outputDiv.innerHTML = '<p>⏳ Loading sensors...</p>';
+
+    apiCall('/api/dagster/sensors', 'GET').then(data => {
+        if (data.status === 'ok') {
+            let html = '<h4>📡 Sensors</h4>';
+            html += '<table class="table table-striped"><tr><th>Name</th><th>Job</th><th>Interval</th><th>Last Evaluated</th><th>Description</th></tr>';
+            for (const s of data.sensors) {
+                html += `<tr>
+                    <td>${s.name}</td>
+                    <td>${s.job}</td>
+                    <td>${s.min_interval}s</td>
+                    <td>${s.last_evaluated || 'Never'}</td>
+                    <td>${s.description}</td>
+                </tr>`;
+            }
+            html += '</table>';
+            outputDiv.innerHTML = html;
+        } else {
+            outputDiv.innerHTML = `<p style="color:red;">❌ ${data.message}</p>`;
         }
     });
 }

@@ -1,0 +1,68 @@
+version: 1
+default_environment: dev
+project_id: sg-datascience-lab
+
+environments:
+  - name: dev
+  - name: staging
+  - name: prod
+
+plugins:
+  extractors:
+    - name: tap-csv
+      namespace: tap_csv
+      pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+      config:
+        csv_files_definition: extract/csv_files.json
+
+    - name: tap-spreadsheets-anywhere
+      namespace: tap_spreadsheets_anywhere
+      pip_url: tap-spreadsheets-anywhere
+      config:
+        tables: []
+
+  loaders:
+    - name: target-sqlite
+      namespace: target_sqlite
+      pip_url: target-sqlite~=0.1
+      config:
+        database: database/singapore_data.db
+
+    - name: target-jsonl
+      namespace: target_jsonl
+      pip_url: target-jsonl
+      config:
+        destination_path: output
+
+  transformers:
+    - name: dbt-sqlite
+      namespace: dbt_sqlite
+      pip_url: dbt-core dbt-sqlite
+      config:
+        project_dir: transform
+
+  utilities:
+    - name: great_expectations
+      namespace: great_expectations
+      pip_url: great_expectations
+
+schedules:
+  - name: daily-hdb-sync
+    interval: "@daily"
+    job: hdb-elt
+
+  - name: weekly-full-sync
+    interval: "@weekly"
+    job: full-elt
+
+jobs:
+  - name: hdb-elt
+    tasks:
+      - tap-csv target-sqlite
+      - dbt-sqlite:run
+
+  - name: full-elt
+    tasks:
+      - tap-csv target-sqlite
+      - dbt-sqlite:run
+      - great_expectations:test
